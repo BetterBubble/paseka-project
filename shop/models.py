@@ -1,6 +1,18 @@
 from django.db import models
 from django.urls import reverse
 from django.utils import timezone
+from django.contrib.auth.models import User
+
+class asexam(models.Model):
+    title = models.CharField(max_length=255, verbose_name="Название экзамена")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Дата создания записи")
+    exam_date = models.DateField(verbose_name="Дата проведения экзамена")
+    image = models.ImageField(upload_to='exam_images/', blank=True, null=True, verbose_name="Изображение задания")
+    users = models.ManyToManyField(User, related_name="asexams", verbose_name="Пользователи, пишущие экзамен")
+    is_public = models.BooleanField(default=False, verbose_name="Опубликовано")
+
+    def __str__(self):
+        return self.title
 
 class ProductManager(models.Manager):
     def available(self):
