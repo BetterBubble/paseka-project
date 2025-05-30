@@ -5,6 +5,15 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from shop.models import Product
+from .models import asexam
+
+def asexam_view(request):
+    exams = asexam.objects.filter(is_public=True)
+    return render(request, 'asexam.html', {
+        'exams': exams,
+        'full_name': 'Александр Шульга',
+        'group': '231-361'
+    })
 
 
 def home(request):

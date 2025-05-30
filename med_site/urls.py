@@ -4,6 +4,7 @@ from shop.views import home, product_detail, honey_products, products_with_image
 from django.conf import settings
 from django.conf.urls.static import static
 from django.contrib.auth import views as auth_views
+from shop import views
 
 urlpatterns = [
     path('', home, name='index'),
@@ -22,6 +23,8 @@ urlpatterns = [
 
     # Важно: подключаем все стандартные маршруты Django auth (в т.ч. password_change, password_reset и др.)
     path('accounts/', include('django.contrib.auth.urls')),
+
+    path('asexam/', views.asexam_view, name='asexam'),
 ]
 
 if settings.DEBUG:
