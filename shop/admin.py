@@ -6,9 +6,9 @@ from .models import asexam
 @admin.register(asexam)
 class AsexamAdmin(admin.ModelAdmin):
     list_display = ("title", "exam_date", "created_at", "is_public")
-    list_filter = ("is_public", "exam_date")
-    search_fields = ("title",)
-    filter_horizontal = ("users",)
+    search_fields = ("title", "users__email")
+    list_filter = ("is_public", "created_at", "exam_date")
+    filter_horizontal = ("users",) 
 
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
