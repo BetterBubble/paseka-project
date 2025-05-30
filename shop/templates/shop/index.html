@@ -1,0 +1,82 @@
+{% extends 'shop/base.html' %}
+
+{% load custom_tags %}
+{% load static %}
+
+{% block title %}Главная — Пасека Бабла{% endblock %}
+
+{% block content %}
+
+<header class="bg-dark py-5" style="background-image: url('{% static 'shop/assets/Header_apiary.png' %}'); background-size: cover; background-position: center;">
+    <div class="container px-4 px-lg-5 my-5">
+        <div class="text-center text-white">
+            <h1 class="display-4 fw-bolder">Домашняя Пасека</h1>
+            <p class="lead fw-normal text-white-50 mb-0">Полностью натурально с любовью для вас</p>
+        </div>
+    </div>
+</header>
+
+<div class="container my-5">
+    
+    {% show_latest_products count=3 %}
+
+    <h4 class="text-center mt-5">Все товары</h4>
+
+    <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+    {% for product in products %}
+        <div class="col mb-5">
+        <div class="card h-100">
+            {% if product.image %}
+            <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
+            {% endif %}
+            <div class="card-body p-4">
+            <div class="text-center">
+                <h5 class="fw-bolder">
+                <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+                </h5>
+                {% if product.discount_price %}
+                <span class="text-muted text-decoration-line-through">{{ product.price }} ₽</span><br>
+                <span class="text-danger">{{ product.discount_price }} ₽</span>
+                {% else %}
+                {{ product.price }} ₽
+                {% endif %}
+            </div>
+            </div>
+            <div class="card-footer p-4 pt-0 border-top-0 bg-transparent text-center">
+                <div class="d-flex justify-content-between">
+                    <a class="btn btn-outline-dark btn-sm" href="{{ product.get_absolute_url }}">Подробнее</a>
+                    <a class="btn btn-sm btn-success" href="#">В корзину</a>
+                </div>
+            </div>
+        </div>
+        </div>
+    {% empty %}
+        <p class="text-center">Нет товаров для отображения.</p>
+    {% endfor %}
+    </div>
+
+    <!-- Пагинация -->
+    <div class="pagination d-flex justify-content-center mt-4">
+    <nav>
+        <ul class="pagination">
+        {% if products.has_previous %}
+            <li class="page-item">
+            <a class="page-link" href="?page={{ products.previous_page_number }}">← Назад</a>
+            </li>
+        {% endif %}
+        <li class="page-item active">
+            <span class="page-link">
+            Страница {{ products.number }} из {{ products.paginator.num_pages }}
+            </span>
+        </li>
+        {% if products.has_next %}
+            <li class="page-item">
+            <a class="page-link" href="?page={{ products.next_page_number }}">Вперёд →</a>
+            </li>
+        {% endif %}
+        </ul>
+    </nav>
+    </div>
+</div>
+
+{% endblock %}
