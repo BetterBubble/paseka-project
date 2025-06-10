@@ -2,6 +2,7 @@ from django.contrib import admin
 from .models import Category, Manufacturer, Region, Product
 from .models import Order, OrderItem, Review, DeliveryMethod
 from .models import asexam
+from .models import Contact, Feedback
 
 @admin.register(asexam)
 class AsexamAdmin(admin.ModelAdmin):
@@ -76,3 +77,33 @@ class ReviewAdmin(admin.ModelAdmin):
         return (obj.comment[:40] + "...") if len(obj.comment) > 40 else obj.comment
 
     list_display = ("product", "user", "rating", "short_comment", "created_at")
+
+
+@admin.register(Contact)
+class ContactAdmin(admin.ModelAdmin):
+    list_display = ('subject', 'name', 'email', 'created_at', 'is_processed')
+    list_filter = ('is_processed', 'created_at')
+    search_fields = ('name', 'email', 'subject', 'message')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+
+
+@admin.register(Feedback)
+class FeedbackAdmin(admin.ModelAdmin):
+    list_display = ('feedback_type', 'name', 'email', 'created_at', 'is_processed')
+    list_filter = ('feedback_type', 'is_processed', 'created_at')
+    search_fields = ('name', 'email', 'message', 'response')
+    date_hierarchy = 'created_at'
+    ordering = ('-created_at',)
+    readonly_fields = ('created_at',)
+    fieldsets = (
+        ('Информация о пользователе', {
+            'fields': ('name', 'email')
+        }),
+        ('Обращение', {
+            'fields': ('feedback_type', 'message', 'created_at')
+        }),
+        ('Обработка', {
+            'fields': ('is_processed', 'response', 'responded_at')
+        }),
+    )

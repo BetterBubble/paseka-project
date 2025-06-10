@@ -1,0 +1,29 @@
+{% for product in latest_products %}
+<div class="col-12 col-md-4">
+    <a href="{{ product.get_absolute_url }}" class="text-decoration-none">
+        <div class="product-card latest-card">
+            <div class="position-relative">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                {% endif %}
+                {% if product.discount_price %}
+                <div class="discount-badge">
+                    -{{ product.price|subtract:product.discount_price|percentage:product.price }}%
+                </div>
+                {% endif %}
+            </div>
+            <div class="p-3">
+                <h3 class="h6 mb-2 text-dark">{{ product.name }}</h3>
+                <div class="d-flex align-items-center gap-2">
+                    {% if product.discount_price %}
+                    <span class="old-price">{{ product.price }} ₽</span>
+                    <span class="fw-bold text-dark">{{ product.discount_price }} ₽</span>
+                    {% else %}
+                    <span class="fw-bold text-dark">{{ product.price }} ₽</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </a>
+</div>
+{% endfor %} 

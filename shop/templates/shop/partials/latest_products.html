@@ -1,15 +1,15 @@
-<h4 class="text-center mt-3 mb-3">Последние товары</h4>
-<div class="row gx-3 gx-lg-4 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
+<h4 class="text-center mt-3 mb-3">Только собрали</h4>
+<div class="row gx-3 gx-lg-2 row-cols-4 row-cols-md-6 row-cols-xl-8 justify-content-center">
   {% for product in latest_products %}
-    <div class="col mb-4">
-      <div class="card h-100 shadow-sm">
+    <div class="col mb-5">
+      <div class="card card-small h-100 shadow-sm">
         {% if product.image %}
-          <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}" style="max-height: 180px; object-fit: cover;">
+          <img class="card-img-top card-img-small" src="{{ product.image.url }}" alt="{{ product.name }}">
         {% endif %}
 
         <div class="card-body p-2 text-center">
           <h6 class="fw-bold">
-            <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
+            <a href="{{ product.get_absolute_url }}" class="product-title-bg">{{ product.name }}</a>
           </h6>
           <p class="mb-1 small">
             {% if product.discount_price %}
@@ -18,8 +18,8 @@
             {% else %}
               {{ product.price }} ₽
             {% endif %}
-          </p>
-        </div>
+            </p>
+          </div>
       </div>
     </div>
   {% endfor %}

@@ -1,0 +1,326 @@
+/* Минимальные стили для карточек */
+.product-card {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    transition: all 0.3s ease;
+    height: 100%;
+    overflow: hidden;
+    position: relative;
+}
+
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 16px rgba(255, 165, 0, 0.2);
+}
+
+.product-card:hover .product-image {
+    transform: scale(1.05);
+}
+
+.product-image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    aspect-ratio: 1;
+    transition: transform 0.5s ease;
+}
+
+/* Эффект свечения при наведении */
+.product-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(120deg, transparent 30%, rgba(255, 165, 0, 0.1), transparent 70%);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.product-card:hover::after {
+    opacity: 1;
+    animation: shine 1.5s infinite;
+}
+
+@keyframes shine {
+    0% {
+        transform: translateX(-100%);
+    }
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+/* Анимация для кнопок */
+.product-card .btn {
+    transition: all 0.3s ease;
+}
+
+.product-card:hover .btn {
+    transform: translateY(-2px);
+}
+
+.discount-badge {
+    position: absolute;
+    top: 1rem;
+    left: 1rem;
+    background: var(--bs-danger);
+    color: var(--bs-white);
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--bs-border-radius-pill);
+    font-weight: 600;
+    font-size: 0.875rem;
+    z-index: 3;
+    transform: rotate(-3deg);
+    box-shadow: 0 3px 6px rgba(0,0,0,0.1);
+}
+
+.product-card:hover .discount-badge {
+    transform: rotate(0deg) scale(1.05);
+    transition: transform 0.3s ease;
+}
+
+.old-price {
+    color: #6c757d;
+    text-decoration: line-through;
+    font-size: 14px;
+}
+
+/* Переопределение некоторых стилей Bootstrap */
+.btn-outline-honey {
+    color: #FFA500;
+    border-color: #FFA500;
+}
+
+.btn-outline-honey:hover {
+    color: #fff;
+    background-color: #FFA500;
+    border-color: #FFA500;
+}
+
+.btn-honey {
+    color: #fff;
+    background-color: #FFA500;
+    border-color: #FFA500;
+}
+
+.btn-honey:hover {
+    color: #fff;
+    background-color: #ff9100;
+    border-color: #ff9100;
+}
+
+/* Наложение при наведении */
+.product-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255, 165, 0, 0.1);
+    opacity: 0;
+    transition: all 0.3s ease;
+}
+
+.product-card:hover .product-overlay {
+    opacity: 1;
+}
+
+/* Контент карточки */
+.product-content {
+    padding: 1rem;
+    background: #fff;
+}
+
+.product-title {
+    color: #333;
+    font-size: 1.1rem;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+/* Цены */
+.price-block {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.current-price {
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+/* Кнопки */
+.card-buttons {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.card-btn {
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-decoration: none;
+    text-align: center;
+}
+
+.btn-details {
+    color: #FFA500;
+    background: transparent;
+}
+
+.btn-details:hover {
+    text-decoration: underline;
+}
+
+.btn-cart {
+    background: #FFA500;
+    color: white;
+}
+
+.btn-cart:hover {
+    background: #ff9100;
+}
+
+/* Секция "Только собрали" */
+.fresh-products {
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+}
+
+.section-title {
+    color: #333;
+    font-size: 1.75rem;
+    margin-bottom: 1.5rem;
+    font-weight: 600;
+}
+
+.fresh-products .product-card {
+    max-width: 280px;
+    margin: auto;
+}
+
+.fresh-products .product-content {
+    padding: 0.75rem;
+}
+
+.fresh-products .product-title {
+    font-size: 1rem;
+}
+
+/* Секция "Все товары" */
+.all-products {
+    padding: 1rem 0;
+}
+
+.all-products .section-title {
+    margin-bottom: 2rem;
+}
+
+.all-products .product-card {
+    margin-bottom: 1.5rem;
+}
+
+/* Пагинация */
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 2rem;
+}
+
+.page-link {
+    padding: 0.5rem 1rem;
+    color: #666;
+    text-decoration: none;
+    border-radius: 4px;
+}
+
+.page-link:hover,
+.page-link.active {
+    background: #FFA500;
+    color: white;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .product-title {
+        font-size: 0.95rem;
+    }
+    
+    .current-price {
+        font-size: 1rem;
+    }
+    
+    .card-btn {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.85rem;
+    }
+}
+
+/* Анимация появления карточек */
+@keyframes cardAppear {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.product-card {
+    animation: cardAppear 0.5s ease forwards;
+}
+
+/* Специальные стили для секции "Только собрали" */
+.latest-products .product-card {
+    max-height: 320px;
+}
+
+.latest-products .product-image {
+    height: 180px;
+    object-fit: cover;
+}
+
+.latest-products .p-3 {
+    padding: 0.75rem !important;
+}
+
+.latest-products .h6 {
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem !important;
+}
+
+/* Специальные стили для карточек в секции "Только собрали" */
+.latest-card {
+    cursor: pointer;
+    max-height: 320px;
+    transition: all 0.3s ease;
+}
+
+.latest-card .product-image {
+    height: 180px;
+    object-fit: cover;
+}
+
+.latest-card:hover {
+    transform: translateY(-5px) scale(1.02);
+    box-shadow: 0 12px 20px rgba(255, 165, 0, 0.15);
+}
+
+.latest-card:hover::after {
+    opacity: 1;
+}
+
+.latest-card:active {
+    transform: translateY(-2px) scale(0.98);
+} 

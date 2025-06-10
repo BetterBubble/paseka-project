@@ -6,54 +6,128 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{% block title %}Пасека Бабла{% endblock %}</title>
 
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <!-- Bootstrap icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
     <!-- Стили -->
     <link rel="stylesheet" href="{% static 'shop/css/styles.css' %}">
+    <link rel="stylesheet" href="{% static 'shop/css/header.css' %}">
+    <link rel="stylesheet" href="{% static 'shop/css/cards.css' %}">
+    <link rel="stylesheet" href="{% static 'shop/css/custom.css' %}">
+    {% block extra_css %}{% endblock %}
     <link rel="icon" type="image/x-icon" href="{% static 'shop/assets/favicon.ico' %}">
 </head>
 <body>
     <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light py-3" id="mainNav">
         <div class="container px-4 px-lg-5">
-            <a class="navbar-brand" href="{% url 'index' %}">Пасека Бабла</a>
+            <a class="navbar-brand" href="{% url 'index' %}">
+                <i class="bi bi-flower1 me-2"></i>Пасека Бабла
+            </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarSupportedContent">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
-                    <li class="nav-item"><a class="nav-link active" href="{% url 'index' %}">Главная</a></li>
-                    <li class="nav-item"><a class="nav-link" href="#">О нас</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'index' %}">
+                            <i class="bi bi-house-door me-1"></i>Главная
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {% if request.path == '/about/' %}active{% endif %}" href="{% url 'about' %}">
+                            <i class="bi bi-info-circle me-1"></i>О нас
+                        </a>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-grid me-1"></i>Категории
+                        </a>
+                        <ul class="dropdown-menu shadow-sm rounded-3">
+                            <li><a class="dropdown-item" href="{% url 'product_type' 'honey' %}"><i class="bi bi-droplet me-2"></i>Мёд</a></li>
+                            <li><a class="dropdown-item" href="{% url 'product_type' 'comb' %}"><i class="bi bi-hexagon me-2"></i>Соты</a></li>
+                            <li><a class="dropdown-item" href="{% url 'product_type' 'propolis' %}"><i class="bi bi-shield me-2"></i>Прополис</a></li>
+                            <li><a class="dropdown-item" href="{% url 'product_type' 'bee_pollen' %}"><i class="bi bi-flower2 me-2"></i>Пыльца</a></li>
+                            <li><a class="dropdown-item" href="{% url 'product_type' 'wax' %}"><i class="bi bi-circle-square me-2"></i>Воск</a></li>
+                        </ul>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="bi bi-chat me-1"></i>Связаться с нами
+                        </a>
+                        <ul class="dropdown-menu shadow-sm rounded-3">
+                            <li><a class="dropdown-item" href="{% url 'contact' %}"><i class="bi bi-envelope me-2"></i>Контакты</a></li>
+                            <li><a class="dropdown-item" href="{% url 'feedback' %}"><i class="bi bi-chat-dots me-2"></i>Обратная связь</a></li>
+                        </ul>
+                    </li>
                 </ul>
-                <form class="d-flex">
-                    <button class="btn btn-outline-dark" type="submit">
-                        <i class="bi-cart-fill me-1"></i>
-                        Корзиночка
-                        <span class="badge bg-dark text-white ms-1 rounded-pill">0</span>
-                    </button>
-                </form>
-                {% if user.is_authenticated %}
-                    Здравствуйте, {{ user.username }} |
-                    <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                        {% csrf_token %}
-                        <button type="submit" class="btn btn-link p-0 m-0 align-baseline">Выйти</button>
-                    </form>
-                {% else %}
-                    <a href="{% url 'login' %}">Войти</a> |
-                    <a href="{% url 'signup' %}">Регистрация</a>
-                {% endif %}
+                <div class="d-flex align-items-center gap-3">
+                    <a href="{% url 'cart_detail' %}" class="btn btn-honey btn-sm d-flex align-items-center gap-2 px-3 position-relative cart-icon">
+                        <i class="bi-cart-fill"></i>
+                        <span>Корзиночка</span>
+                        {% if cart_total_items > 0 %}
+                            <span class="badge bg-dark text-white rounded-pill ms-2">
+                                {{ cart_total_items }}
+                            </span>
+                        {% endif %}
+                    </a>
+                    {% if user.is_authenticated %}
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="fw-semibold text-dark">
+                                <i class="bi bi-person-circle me-1"></i>{{ user.username }}
+                            </span>
+                            <form method="post" action="{% url 'logout' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-honey-light btn-sm">
+                                    <i class="bi bi-box-arrow-right me-1"></i>Выйти
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <a href="{% url 'login' %}" class="btn btn-honey-light btn-sm">
+                            <i class="bi bi-box-arrow-in-right me-1"></i>Войти
+                        </a>
+                        <a href="{% url 'signup' %}" class="btn btn-honey-light btn-sm">
+                            <i class="bi bi-person-plus me-1"></i>Регистрация
+                        </a>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </nav>
 
     {% block content %}{% endblock %}
 
-    <footer class="py-5 bg-dark">
+    <footer class="py-4 bg-footer text-center">
         <div class="container">
             <p class="m-0 text-center text-white">Copyright © Пасека Бабла 2025</p>
         </div>
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Анимация навбара при прокрутке
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('mainNav');
+            if (window.scrollY > 50) {
+                navbar.classList.add('scrolled');
+            } else {
+                navbar.classList.remove('scrolled');
+            }
+        });
+
+        // Подсветка активного пункта меню
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('.nav-link');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
 </body>
 </html>

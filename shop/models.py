@@ -88,10 +88,13 @@ class Product(models.Model):
         return self.name
 
     def get_absolute_url(self):
-        return reverse('product_detail', args=[str(self.id)])
-
-    def get_absolute_url(self):
         return reverse('product_detail', kwargs={'pk': self.pk})
+
+    def get_discount_percentage(self):
+        if self.discount_price and self.price:
+            discount = self.price - self.discount_price
+            return int((discount / self.price) * 100)
+        return 0
 
 class DeliveryMethod(models.Model):
     name = models.CharField("Способ доставки", max_length=100)
@@ -118,6 +121,12 @@ class Order(models.Model):
     delivery_method = models.ForeignKey(DeliveryMethod, verbose_name="Способ доставки", on_delete=models.SET_NULL, null=True)
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='pending')
     total_price = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
+    products = models.ManyToManyField(
+        Product,
+        through='OrderItem',
+        through_fields=('order', 'product'),
+        verbose_name="Товары в заказе"
+    )
 
     class Meta:
         verbose_name = "Заказ"
@@ -126,10 +135,19 @@ class Order(models.Model):
     def __str__(self):
         return f"Заказ #{self.id} от {self.user}"
 
+    def calculate_total(self):
+        """Подсчет общей суммы заказа"""
+        return sum(item.get_cost() for item in self.orderitem_set.all())
+
+    def save(self, *args, **kwargs):
+        if not self.total_price:
+            self.total_price = self.calculate_total()
+        super().save(*args, **kwargs)
+
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE)
-    product = models.ForeignKey("Product", verbose_name="Товар", on_delete=models.CASCADE)
+    product = models.ForeignKey(Product, verbose_name="Товар", on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField("Количество")
     price_at_purchase = models.DecimalField("Цена на момент покупки", max_digits=10, decimal_places=2)
 
@@ -139,6 +157,10 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product} x{self.quantity}"
+
+    def get_cost(self):
+        """Получить стоимость позиции"""
+        return self.price_at_purchase * self.quantity
 
 
 class Review(models.Model):
@@ -154,3 +176,55 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user} о {self.product}"
+
+class Contact(models.Model):
+    name = models.CharField("Имя", max_length=100)
+    email = models.EmailField("Email")
+    subject = models.CharField("Тема", max_length=200)
+    message = models.TextField("Сообщение")
+    created_at = models.DateTimeField("Дата отправки", auto_now_add=True)
+    is_processed = models.BooleanField("Обработано", default=False)
+
+    class Meta:
+        verbose_name = "Сообщение"
+        verbose_name_plural = "Сообщения"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.subject} от {self.name}"
+
+
+class Feedback(models.Model):
+    FEEDBACK_TYPES = [
+        ('suggestion', 'Предложение по улучшению'),
+        ('complaint', 'Жалоба'),
+        ('question', 'Вопрос о продукции'),
+        ('other', 'Другое')
+    ]
+
+    name = models.CharField("Имя", max_length=100)
+    email = models.EmailField("Email")
+    feedback_type = models.CharField(
+        "Тип обращения",
+        max_length=20,
+        choices=FEEDBACK_TYPES
+    )
+    message = models.TextField("Сообщение")
+    created_at = models.DateTimeField("Дата отправки", auto_now_add=True)
+    is_processed = models.BooleanField("Обработано", default=False)
+    response = models.TextField("Ответ", blank=True)
+    responded_at = models.DateTimeField("Дата ответа", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Обратная связь"
+        verbose_name_plural = "Обратная связь"
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_feedback_type_display()} от {self.name}"
+
+    def mark_as_responded(self, response_text):
+        self.response = response_text
+        self.is_processed = True
+        self.responded_at = timezone.now()
+        self.save()

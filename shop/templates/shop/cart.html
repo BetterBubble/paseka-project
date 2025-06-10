@@ -1,0 +1,60 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Корзина — Пасека Бабла{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="text-center mb-4 fw-bold text-honey">🛒 Ваша корзиночка</h2>
+
+  {% if cart %}
+    <div class="table-responsive">
+      <table class="table table-hover align-middle shadow-sm">
+        <thead class="table-light">
+          <tr>
+            <th>Товар</th>
+            <th class="text-center">Цена</th>
+            <th class="text-center">Кол-во</th>
+            <th class="text-center">Сумма</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in cart %}
+            <tr>
+              <td>
+                <div class="d-flex align-items-center gap-3">
+                  {% if item.product.image %}
+                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;">
+                  {% endif %}
+                  <div>
+                    <strong>{{ item.product.name }}</strong><br>
+                    <small class="text-muted">{{ item.product.category }}</small>
+                  </div>
+                </div>
+              </td>
+              <td class="text-center">{{ item.product.price }} ₽</td>
+              <td class="text-center">{{ item.quantity }}</td>
+              <td class="text-center fw-bold">{{ item.total_price }} ₽</td>
+              <td class="text-end">
+                <a href="{% url 'remove_from_cart' item.product.id %}" class="btn btn-sm btn-outline-danger">✕</a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+
+    <div class="text-end mt-4">
+      <h5 class="fw-bold">Итого: {{ cart.get_total_price }} ₽</h5>
+      <a href="#" class="btn btn-honey-light mt-2">Оформить заказ</a>
+    </div>
+
+  {% else %}
+    <p class="text-center fs-5">Корзина пока пуста. Но это легко исправить 🍯</p>
+    <div class="text-center">
+      <a href="{% url 'index' %}" class="btn btn-outline-honey mt-3">Перейти к покупкам</a>
+    </div>
+  {% endif %}
+</div>
+{% endblock %}

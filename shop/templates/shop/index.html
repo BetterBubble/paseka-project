@@ -16,67 +16,117 @@
     </div>
 </header>
 
-<div class="container my-5">
-    
-    {% show_latest_products count=3 %}
-
-    <h4 class="text-center mt-5">Все товары</h4>
-
-    <div class="row gx-4 gx-lg-5 row-cols-2 row-cols-md-3 row-cols-xl-4 justify-content-center">
-    {% for product in products %}
-        <div class="col mb-5">
-        <div class="card h-100">
-            {% if product.image %}
-            <img class="card-img-top" src="{{ product.image.url }}" alt="{{ product.name }}">
-            {% endif %}
-            <div class="card-body p-4">
-            <div class="text-center">
-                <h5 class="fw-bolder">
-                <a href="{{ product.get_absolute_url }}">{{ product.name }}</a>
-                </h5>
-                {% if product.discount_price %}
-                <span class="text-muted text-decoration-line-through">{{ product.price }} ₽</span><br>
-                <span class="text-danger">{{ product.discount_price }} ₽</span>
-                {% else %}
-                {{ product.price }} ₽
-                {% endif %}
+<!-- Секция "Только собрали" -->
+<section class="py-4 latest-products">
+    <div class="container">
+        <h2 class="h3 mb-4 text-center">Только собрали</h2>
+        <div class="row g-4 justify-content-center">
+            {% for product in latest_products %}
+            <div class="col-12 col-sm-6 col-md-3">
+                <a href="{{ product.get_absolute_url }}" class="text-decoration-none">
+                    <div class="product-card latest-card">
+                        <div class="position-relative">
+                            {% if product.image %}
+                            <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                            {% endif %}
+                            {% if product.discount_price %}
+                            <div class="discount-badge">
+                                -{{ product.price|subtract:product.discount_price|percentage:product.price }}%
+                            </div>
+                            {% endif %}
+                        </div>
+                        <div class="p-3">
+                            <h3 class="h6 mb-2 text-dark">{{ product.name }}</h3>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if product.discount_price %}
+                                <span class="old-price">{{ product.price }} ₽</span>
+                                <span class="fw-bold text-dark">{{ product.discount_price }} ₽</span>
+                                {% else %}
+                                <span class="fw-bold text-dark">{{ product.price }} ₽</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </a>
             </div>
-            </div>
-            <div class="card-footer p-4 pt-0 border-top-0 bg-transparent text-center">
-                <div class="d-flex justify-content-between">
-                    <a class="btn btn-outline-dark btn-sm" href="{{ product.get_absolute_url }}">Подробнее</a>
-                    <a class="btn btn-sm btn-success" href="#">В корзину</a>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Секция "Все товары" -->
+<section class="py-4">
+    <div class="container">
+        <h2 class="h3 mb-4 text-center">Все товары</h2>
+        <div class="row g-4">
+            {% for product in products %}
+            <div class="col-12 col-sm-6 col-md-3">
+                <div class="product-card">
+                    <div class="position-relative overflow-hidden">
+                        {% if product.image %}
+                        <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
+                        {% endif %}
+                        {% if product.discount_price %}
+                        <div class="discount-badge d-inline-flex align-items-center">
+                            <span>-{{ product.price|subtract:product.discount_price|percentage:product.price }}%</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="p-3">
+                        <h3 class="h6 mb-2">{{ product.name }}</h3>
+                        <div class="d-flex align-items-center gap-2 mb-3">
+                            {% if product.discount_price %}
+                            <span class="old-price">{{ product.price }} ₽</span>
+                            <span class="fw-bold">{{ product.discount_price }} ₽</span>
+                            {% else %}
+                            <span class="fw-bold">{{ product.price }} ₽</span>
+                            {% endif %}
+                        </div>
+                        <div class="d-flex gap-2">
+                            <a href="{{ product.get_absolute_url }}" class="btn btn-outline-honey btn-sm flex-grow-1">Подробнее</a>
+                            <a href="{% url 'add_to_cart' product.id %}?next={{ request.path }}" class="btn btn-honey btn-sm flex-grow-1">В корзину</a>
+                        </div>
+                    </div>
                 </div>
             </div>
+            {% empty %}
+            <div class="col-12">
+                <p class="text-center">Нет товаров для отображения.</p>
+            </div>
+            {% endfor %}
         </div>
-        </div>
-    {% empty %}
-        <p class="text-center">Нет товаров для отображения.</p>
-    {% endfor %}
-    </div>
 
-    <!-- Пагинация -->
-    <div class="pagination d-flex justify-content-center mt-4">
-    <nav>
-        <ul class="pagination">
-        {% if products.has_previous %}
-            <li class="page-item">
-            <a class="page-link" href="?page={{ products.previous_page_number }}">← Назад</a>
-            </li>
+        <!-- Пагинация -->
+        {% if page_obj.has_other_pages %}
+        <nav class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
+                </li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active">
+                        <span class="page-link">{{ num }}</span>
+                    </li>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                    </li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд →</a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
         {% endif %}
-        <li class="page-item active">
-            <span class="page-link">
-            Страница {{ products.number }} из {{ products.paginator.num_pages }}
-            </span>
-        </li>
-        {% if products.has_next %}
-            <li class="page-item">
-            <a class="page-link" href="?page={{ products.next_page_number }}">Вперёд →</a>
-            </li>
-        {% endif %}
-        </ul>
-    </nav>
     </div>
-</div>
+</section>
 
 {% endblock %}

@@ -1,0 +1,74 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Заказ #{{ order.id }} — Пасека Бабла{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="card shadow-sm">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2 class="card-title mb-0">Заказ #{{ order.id }}</h2>
+                <span class="badge bg-{{ order.status|yesno:'success,warning,danger' }} p-2">
+                    {{ order.get_status_display }}
+                </span>
+            </div>
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <h5>Информация о заказе</h5>
+                    <p class="mb-1"><strong>Дата заказа:</strong> {{ order.created_at|date:"d.m.Y H:i" }}</p>
+                    <p class="mb-1"><strong>Способ доставки:</strong> {{ order.delivery_method }}</p>
+                    <p class="mb-1"><strong>Адрес доставки:</strong> {{ order.delivery_address }}</p>
+                </div>
+                <div class="col-md-6">
+                    <h5>Информация о покупателе</h5>
+                    <p class="mb-1"><strong>Имя:</strong> {{ order.user.get_full_name|default:order.user.username }}</p>
+                    <p class="mb-1"><strong>Email:</strong> {{ order.user.email }}</p>
+                </div>
+            </div>
+
+            <h5 class="mb-3">Товары в заказе</h5>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Товар</th>
+                            <th class="text-center">Цена</th>
+                            <th class="text-center">Количество</th>
+                            <th class="text-end">Сумма</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in items %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if item.product.image %}
+                                    <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}" 
+                                         class="rounded me-3" style="width: 50px; height: 50px; object-fit: cover;">
+                                    {% endif %}
+                                    <div>
+                                        <h6 class="mb-0">{{ item.product.name }}</h6>
+                                        <small class="text-muted">{{ item.product.category }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="text-center">{{ item.price_at_purchase }} ₽</td>
+                            <td class="text-center">{{ item.quantity }}</td>
+                            <td class="text-end">{{ item.get_cost }} ₽</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td colspan="3" class="text-end"><strong>Итого:</strong></td>
+                            <td class="text-end"><strong>{{ order.total_price }} ₽</strong></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

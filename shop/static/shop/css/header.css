@@ -1,0 +1,188 @@
+/* Основные стили навигации */
+.navbar {
+    background: linear-gradient(to right, #fff9e6, #ffe4b5) !important;
+    transition: all 0.3s ease;
+    padding: 0.5rem 0;
+}
+
+.navbar.scrolled {
+    box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+    padding: 0.3rem 0;
+}
+
+/* Логотип */
+.navbar-brand {
+    font-family: 'Roboto Slab', serif;
+    font-weight: 700;
+    color: #8B4513 !important;
+    font-size: 1.5rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.navbar-brand:hover {
+    transform: scale(1.05);
+}
+
+.navbar-brand::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #FFA500;
+    transition: width 0.3s ease;
+}
+
+.navbar-brand:hover::after {
+    width: 100%;
+}
+
+/* Пункты меню */
+.nav-link {
+    color: #5D4037 !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.nav-link:hover {
+    color: #FFA500 !important;
+    transform: translateY(-2px);
+}
+
+.nav-link.active {
+    color: #FFA500 !important;
+}
+
+/* Выпадающее меню */
+.dropdown-menu {
+    border: none;
+    background: rgba(255, 249, 230, 0.95);
+    backdrop-filter: blur(10px);
+    animation: dropdownFade 0.3s ease;
+}
+
+.dropdown-item {
+    color: #5D4037;
+    transition: all 0.3s ease;
+    padding: 0.7rem 1.5rem;
+}
+
+.dropdown-item:hover {
+    background: rgba(255, 165, 0, 0.1);
+    color: #FFA500;
+    transform: translateX(5px);
+}
+
+/* Кнопки */
+.btn-honey {
+    background: linear-gradient(45deg, #FFA500, #FFD700);
+    border: none;
+    color: white !important;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-honey::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+    transition: 0.5s;
+}
+
+.btn-honey:hover::before {
+    left: 100%;
+}
+
+.btn-honey:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(255, 165, 0, 0.3);
+}
+
+.btn-honey-light {
+    background-color: transparent;
+    border: 2px solid #FFA500;
+    color: #8B4513 !important;
+    transition: all 0.3s ease;
+}
+
+.btn-honey-light:hover {
+    background-color: #FFA500;
+    color: white !important;
+    transform: translateY(-2px);
+}
+
+/* Корзина */
+.cart-icon {
+    position: relative;
+    transition: all 0.3s ease;
+}
+
+.cart-icon:hover {
+    transform: scale(1.1);
+}
+
+.badge {
+    transition: all 0.3s ease;
+}
+
+/* Анимации */
+@keyframes dropdownFade {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Адаптивность */
+@media (max-width: 992px) {
+    .navbar-collapse {
+        background: rgba(255, 249, 230, 0.95);
+        padding: 1rem;
+        border-radius: 10px;
+        margin-top: 1rem;
+    }
+    
+    .nav-link {
+        padding: 0.7rem 1rem;
+    }
+    
+    .dropdown-menu {
+        border: none;
+        background: transparent;
+        padding-left: 1rem;
+    }
+}
+
+/* Эффект подсветки активного элемента */
+.nav-item {
+    position: relative;
+}
+
+.nav-item::after {
+    content: '';
+    position: absolute;
+    width: 0;
+    height: 2px;
+    bottom: 0;
+    left: 50%;
+    background-color: #FFA500;
+    transition: all 0.3s ease;
+}
+
+.nav-item:hover::after {
+    width: 100%;
+    left: 0;
+} 

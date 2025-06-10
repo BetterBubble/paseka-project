@@ -6,6 +6,14 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login
 from shop.models import Product
 from .models import asexam
+from django.db.models import Avg
+from .cart import Cart
+from django.contrib import messages
+from .forms import ContactForm, FeedbackForm, ReviewForm
+from django.core.mail import send_mail
+from django.conf import settings
+from .forms import OrderCreateForm
+from .models import Order, OrderItem
 
 def asexam_view(request):
     exams = asexam.objects.filter(is_public=True)
@@ -14,6 +22,11 @@ def asexam_view(request):
         'full_name': 'Александр Шульга',
         'group': '231-361'
     })
+
+def avg_price(request):
+    result = Product.objects.aggregate(Avg('price'))
+    average_price = result['price__avg']
+    return render(request, 'shop/avg_price.html', {'average': average_price})
 
 
 def home(request):
@@ -25,7 +38,7 @@ def home(request):
         .exclude(image__isnull=True)\
         .order_by('-price')
 
-    paginator = Paginator(product_list, 4)  # 4 товара на страницу
+    paginator = Paginator(product_list, 8)  # 8 товаров на страницу (2 ряда по 4)
     page_number = request.GET.get('page')
 
     try:
@@ -35,9 +48,12 @@ def home(request):
     except EmptyPage:
         products = paginator.page(paginator.num_pages)
 
+    page_obj = products
+
     return render(request, 'shop/index.html', {
         'products': products,
-        'latest_products': latest_products
+        'latest_products': latest_products,
+        'page_obj': page_obj,
     })
 
 def product_detail(request, pk):
@@ -83,3 +99,161 @@ def register(request):
     else:
         form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
+
+def about(request):
+    return render(request, 'shop/about.html')
+
+PRODUCT_TYPE_TITLES = {
+    'honey': 'Мёд',
+    'comb': 'Соты',
+    'propolis': 'Прополис',
+    'bee_pollen': 'Пыльца',
+    'wax': 'Воск'
+}
+
+
+def products_by_type(request, type):
+    products = Product.objects.filter(product_type=type)
+    title = PRODUCT_TYPE_TITLES.get(type, 'Категория')
+    return render(request, 'shop/products_by_type.html', {
+        'products': products,
+        'type': type,
+        'title': title
+    })
+
+def add_to_cart(request, product_id):
+    cart = Cart(request)
+    product = get_object_or_404(Product, id=product_id)
+    cart.add(product)
+    return redirect(request.GET.get('next', 'index'))
+
+def remove_from_cart(request, product_id):
+    cart = Cart(request)
+    product = get_object_or_404(Product, id=product_id)
+    cart.remove(product)
+    return redirect('cart_detail')
+
+def cart_detail(request):
+    cart = Cart(request)
+    return render(request, 'shop/cart.html', {'cart': cart})
+
+def contact_view(request):
+    if request.method == 'POST':
+        form = ContactForm(request.POST)
+        if form.is_valid():
+            contact = form.save()  # Сохраняем в базу данных
+            
+            # Отправка email администратору
+            email_message = f"""
+            Новое сообщение от {contact.name}
+            Email: {contact.email}
+            Тема: {contact.subject}
+            
+            {contact.message}
+            """
+            try:
+                send_mail(
+                    f"Новое сообщение: {contact.subject}",
+                    email_message,
+                    contact.email,
+                    [settings.DEFAULT_FROM_EMAIL],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Спасибо! Ваше сообщение успешно отправлено.')
+                return redirect('contact')
+            except Exception as e:
+                messages.error(request, 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.')
+    else:
+        form = ContactForm()
+    
+    return render(request, 'shop/contact.html', {'form': form})
+
+def feedback_view(request):
+    if request.method == 'POST':
+        form = FeedbackForm(request.POST)
+        if form.is_valid():
+            feedback = form.save()  # Сохраняем в базу данных
+            
+            # Отправка feedback администратору
+            email_message = f"""
+            Новая обратная связь
+            От: {feedback.name}
+            Email: {feedback.email}
+            Тип: {feedback.get_feedback_type_display()}
+            
+            {feedback.message}
+            """
+            try:
+                send_mail(
+                    f"Обратная связь: {feedback.get_feedback_type_display()}",
+                    email_message,
+                    feedback.email,
+                    [settings.DEFAULT_FROM_EMAIL],
+                    fail_silently=False,
+                )
+                messages.success(request, 'Спасибо за ваш отзыв! Мы обязательно рассмотрим его.')
+                return redirect('feedback')
+            except Exception as e:
+                messages.error(request, 'Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.')
+    else:
+        form = FeedbackForm()
+    
+    return render(request, 'shop/feedback.html', {'form': form})
+
+def add_review(request, product_id):
+    product = get_object_or_404(Product, id=product_id)
+    
+    if request.method == 'POST':
+        form = ReviewForm(request.POST)
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.product = product
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Спасибо за ваш отзыв!')
+            return redirect('product_detail', pk=product_id)
+    else:
+        form = ReviewForm()
+    
+    return render(request, 'shop/add_review.html', {
+        'form': form,
+        'product': product
+    })
+
+def create_order(request):
+    cart = Cart(request)
+    if request.method == 'POST':
+        form = OrderCreateForm(request.POST)
+        if form.is_valid():
+            order = form.save(commit=False)
+            order.user = request.user
+            order.save()
+            
+            # Создаем OrderItem для каждого товара в корзине
+            for item in cart:
+                OrderItem.objects.create(
+                    order=order,
+                    product=item['product'],
+                    quantity=item['quantity'],
+                    price_at_purchase=item['price']
+                )
+            
+            # Очищаем корзину
+            cart.clear()
+            
+            return redirect('order_detail', order_id=order.id)
+    else:
+        form = OrderCreateForm()
+    return render(request, 'shop/order/create.html', {
+        'cart': cart,
+        'form': form
+    })
+
+def order_detail(request, order_id):
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    # Используем связь ManyToManyField для получения товаров
+    order_items = order.orderitem_set.all().select_related('product')
+    return render(request, 'shop/order/detail.html', {
+        'order': order,
+        'items': order_items
+    })

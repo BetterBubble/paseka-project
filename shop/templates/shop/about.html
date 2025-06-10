@@ -1,0 +1,154 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}О нас - Пасека Бабла{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'shop/css/about.css' %}">
+{% endblock %}
+
+{% block content %}
+<!-- Заголовок с фоновым изображением -->
+<div class="about-header" style="background-image: url('{% static 'shop/assets/about_banner.png' %}');">
+    <div class="container h-100 d-flex align-items-center justify-content-center">
+        <div class="header-content text-center text-white">
+            <h1 class="display-4 fw-bold mb-4">Пасека Бабла</h1>
+            <p class="lead">Традиции пчеловодства с современным подходом</p>
+        </div>
+    </div>
+</div>
+
+<!-- Основная секция -->
+<section class="about-section">
+    <div class="container">
+        <div class="row justify-content-center mb-5">
+            <div class="col-md-10">
+                <div class="about-card">
+                    <div class="about-image-container">
+                        <img src="{% static 'shop/assets/about_main.png' %}" alt="Наша пасека" class="about-image">
+                    </div>
+                    <div class="about-content">
+                        <h2 class="about-title">Наша История</h2>
+                        <p class="about-subtitle">Более 20 лет опыта в пчеловодстве</p>
+                        <p class="mb-4">
+                            "Пасека Бабла" — это не просто мёд. Это результат кропотливой работы, глубокого уважения к природе 
+                            и стремления к безупречному качеству. Мы специализируемся на производстве элитной пчелиной продукции, 
+                            где каждая капля мёда проходит строгий отбор.
+                        </p>
+                        <p>
+                            Наша пасека расположена в экологически чистом районе, вдали от промышленных объектов. 
+                            Благодаря этому, пчёлы собирают нектар с редких трав и диких цветов, что придаёт нашему 
+                            мёду исключительный вкус, аромат и ценность.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Особенности -->
+        <div class="row mb-5">
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-flower1"></i>
+                    </div>
+                    <h3 class="h5 mb-3">Натуральность</h3>
+                    <p>100% натуральный продукт без добавок и компромиссов. Мы гарантируем качество каждой партии мёда.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-award"></i>
+                    </div>
+                    <h3 class="h5 mb-3">Опыт</h3>
+                    <p>Многолетний опыт в пчеловодстве и современные технологии производства.</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="bi bi-heart"></i>
+                    </div>
+                    <h3 class="h5 mb-3">Забота</h3>
+                    <p>Мы заботимся о наших пчёлах и окружающей среде, обеспечивая устойчивое производство.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Наша команда -->
+        <div class="team-section rounded-3 mb-5">
+            <div class="container">
+                <h2 class="about-title">Наша Команда</h2>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="team-card">
+                            <div class="team-image-container">
+                                <img src="{% static 'shop/assets/team1.png' %}" alt="Пчеловод" class="team-image">
+                            </div>
+                            <h3 class="h5 mb-2">Иван Пчелов</h3>
+                            <p class="text-muted">Главный пчеловод</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="team-card">
+                            <div class="team-image-container">
+                                <img src="{% static 'shop/assets/team2.png' %}" alt="Технолог" class="team-image">
+                            </div>
+                            <h3 class="h5 mb-2">Мария Медова</h3>
+                            <p class="text-muted">Технолог-эксперт</p>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="team-card">
+                            <div class="team-image-container">
+                                <img src="{% static 'shop/assets/team3.png' %}" alt="Менеджер" class="team-image">
+                            </div>
+                            <h3 class="h5 mb-2">Петр Сотов</h3>
+                            <p class="text-muted">Менеджер по качеству</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Контакты -->
+        <div class="contact-section bg-light rounded-3">
+            <div class="container">
+                <h2 class="about-title">Свяжитесь с нами</h2>
+                <div class="row justify-content-center">
+                    <div class="col-md-8">
+                        <div class="contact-info">
+                            <div class="contact-icon">
+                                <i class="bi bi-geo-alt"></i>
+                            </div>
+                            <div>
+                                <h4 class="h6 mb-1">Адрес</h4>
+                                <p class="mb-0">ул. Пчелиная, 123, г. Медовый, Россия</p>
+                            </div>
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-icon">
+                                <i class="bi bi-telephone"></i>
+                            </div>
+                            <div>
+                                <h4 class="h6 mb-1">Телефон</h4>
+                                <p class="mb-0">+7 (999) 123-45-67</p>
+                            </div>
+                        </div>
+                        <div class="contact-info">
+                            <div class="contact-icon">
+                                <i class="bi bi-envelope"></i>
+                            </div>
+                            <div>
+                                <h4 class="h6 mb-1">Email</h4>
+                                <p class="mb-0">premium@bablhoney.ru</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,19 +1,507 @@
+{% extends 'shop/base.html' %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ product.name }}</title>
-</head>
-<body>
-    <h1>{{ product.name }}</h1>
-    <p>{{ product.description }}</p>
-    <p>Цена: {{ product.price }} ₽</p>
-    {% if product.discount_price %}
-        <p>Цена со скидкой: {{ product.discount_price }} ₽</p>
-    {% endif %}
-    {% if product.image %}
-        <img src="{{ product.image.url }}" alt="{{ product.name }}">
-    {% endif %}
-</body>
-</html>
+{% load custom_tags %}
+
+{% block extra_css %}
+<style>
+    .product-image-container {
+        position: relative;
+        overflow: hidden;
+        border-radius: 24px;
+        height: 100%;
+        transition: transform 0.3s ease-in-out;
+        cursor: zoom-in;
+    }
+
+    .product-image-container::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(180deg, rgba(0, 0, 0, 0.02) 0%, rgba(0, 0, 0, 0.05) 100%);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .product-image-container:hover::after {
+        opacity: 1;
+    }
+
+    .product-image-container:hover {
+        transform: scale(1.02);
+    }
+
+    .product-main-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        transition: all 0.5s ease;
+        image-rendering: -webkit-optimize-contrast;
+        backface-visibility: hidden;
+        transform: translateZ(0);
+        -webkit-font-smoothing: subpixel-antialiased;
+    }
+
+    .product-main-image:hover {
+        transform: scale(1.03);
+    }
+
+    .discount-label {
+        position: absolute;
+        top: 24px;
+        right: 24px;
+        background: linear-gradient(135deg, #ff6b6b 0%, #ff8787 100%);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 1.125rem;
+        box-shadow: 0 4px 15px rgba(255, 107, 107, 0.3);
+        backdrop-filter: blur(5px);
+        -webkit-backdrop-filter: blur(5px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        animation: float 3s ease-in-out infinite;
+        z-index: 1;
+    }
+
+    @keyframes float {
+        0% {
+            transform: translateY(0px);
+        }
+        50% {
+            transform: translateY(-5px);
+        }
+        100% {
+            transform: translateY(0px);
+        }
+    }
+
+    .product-info-container {
+        height: 100%;
+        background: #fff;
+        border-radius: 24px;
+        box-shadow: 0 8px 24px rgba(149, 157, 165, 0.1);
+        padding: 2rem;
+    }
+
+    .product-header {
+        margin-bottom: 1.5rem;
+    }
+
+    .product-title {
+        font-size: 2.25rem;
+        color: #2d3436;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 1rem;
+    }
+
+    .product-description {
+        font-size: 1.125rem;
+        line-height: 1.6;
+        color: #636e72;
+        margin-bottom: 2rem;
+    }
+
+    .price-section {
+        background: #f8f9fa;
+        border-radius: 16px;
+        padding: 1.25rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .current-price {
+        color: #FFA500;
+        font-size: 1.75rem;
+        font-weight: 700;
+        line-height: 1;
+    }
+
+    .old-price {
+        font-size: 1rem;
+        color: #adb5bd;
+        text-decoration: line-through;
+        margin-left: 1rem;
+    }
+
+    .stock-badge {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        border-radius: 100px;
+        font-weight: 500;
+        font-size: 0.875rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stock-badge.in-stock {
+        background-color: #e6f7ed;
+        color: #0d9f4f;
+    }
+
+    .stock-badge.out-of-stock {
+        background-color: #ffe9e9;
+        color: #e03131;
+    }
+
+    .product-meta-grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+
+    .meta-card {
+        background: #f8f9fa;
+        padding: 1rem;
+        border-radius: 16px;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: flex-start;
+        gap: 1rem;
+    }
+
+    .meta-card:hover {
+        background: #fff;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+    }
+
+    .meta-icon {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(255, 165, 0, 0.1);
+        border-radius: 8px;
+        color: #FFA500;
+    }
+
+    .meta-content {
+        flex: 1;
+    }
+
+    .meta-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        color: #868e96;
+        margin-bottom: 0.25rem;
+    }
+
+    .meta-value {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #2d3436;
+    }
+
+    .action-buttons {
+        margin-top: auto;
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1rem;
+    }
+
+    .btn-cart {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem 2rem;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 1.125rem;
+        background: linear-gradient(45deg, #FFA500, #ff9100);
+        color: white;
+        border: none;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        width: 100%;
+    }
+
+    .btn-cart:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 24px rgba(255, 165, 0, 0.25);
+        color: white;
+        text-decoration: none;
+    }
+
+    .btn-cart:disabled {
+        background: #dee2e6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-back {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        padding: 1rem;
+        border-radius: 100px;
+        font-weight: 600;
+        font-size: 1.125rem;
+        background: #f8f9fa;
+        color: #495057;
+        border: none;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        width: 100%;
+    }
+
+    .btn-back:hover {
+        background: #e9ecef;
+        color: #212529;
+        text-decoration: none;
+    }
+
+    @media (max-width: 991.98px) {
+        .product-image-container {
+            height: 400px;
+            margin-bottom: 1.5rem;
+        }
+
+        .product-info-container {
+            height: auto;
+        }
+
+        .product-meta-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    .reviews-section {
+        margin-top: 4rem;
+    }
+
+    .review-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        transition: transform 0.3s ease;
+    }
+
+    .review-card:hover {
+        transform: translateY(-3px);
+    }
+
+    .review-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .review-author {
+        font-weight: 600;
+        color: #2d3436;
+    }
+
+    .review-date {
+        color: #b2bec3;
+        font-size: 0.9rem;
+    }
+
+    .star-rating {
+        color: #ffd700;
+    }
+
+    .review-content {
+        color: #636e72;
+        line-height: 1.6;
+    }
+
+    @keyframes slideUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes pulse {
+        0% {
+            transform: scale(1);
+        }
+        50% {
+            transform: scale(1.05);
+        }
+        100% {
+            transform: scale(1);
+        }
+    }
+
+    .product-details {
+        min-height: 450px;
+        max-width: 1000px;
+        margin: 0 auto;
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        padding: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row g-4">
+        <!-- Изображение продукта -->
+        <div class="col-lg-6 h-100">
+            <div class="product-image-container">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-main-image">
+                {% else %}
+                    <img src="{% static 'shop/assets/default-honey.jpg' %}" alt="Нет изображения" class="product-main-image">
+                {% endif %}
+                {% if product.discount_price %}
+                    <div class="discount-label">
+                        -{{ product.get_discount_percentage }}%
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Информация о продукте -->
+        <div class="col-lg-6">
+            <div class="product-info-container d-flex flex-column">
+                <div class="product-header">
+                    <h1 class="product-title mb-3">{{ product.name }}</h1>
+                    <p class="product-description mb-4">{{ product.description }}</p>
+                </div>
+
+                <div class="price-section d-flex align-items-baseline">
+                    {% if product.discount_price %}
+                        <span class="current-price">{{ product.discount_price }} ₽</span>
+                        <span class="old-price">{{ product.price }} ₽</span>
+                    {% else %}
+                        <span class="current-price">{{ product.price }} ₽</span>
+                    {% endif %}
+                </div>
+
+                {% if product.stock_quantity > 0 %}
+                    <div class="stock-badge in-stock">
+                        <i class="bi bi-check-circle-fill me-2"></i>
+                        В наличии: {{ product.stock_quantity }} шт.
+                    </div>
+                {% else %}
+                    <div class="stock-badge out-of-stock">
+                        <i class="bi bi-x-circle-fill me-2"></i>
+                        Нет в наличии
+                    </div>
+                {% endif %}
+
+                <div class="product-meta-grid">
+                    {% if product.product_type %}
+                    <div class="meta-card">
+                        <div class="meta-icon">
+                            <i class="bi bi-box-seam"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-title">Вид продукции</div>
+                            <div class="meta-value">{{ product.get_product_type_display }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if product.category %}
+                    <div class="meta-card">
+                        <div class="meta-icon">
+                            <i class="bi bi-grid"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-title">Категория</div>
+                            <div class="meta-value">{{ product.category.name }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if product.region %}
+                    <div class="meta-card">
+                        <div class="meta-icon">
+                            <i class="bi bi-geo-alt"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-title">Регион</div>
+                            <div class="meta-value">{{ product.region.name }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    {% if product.manufacturer %}
+                    <div class="meta-card">
+                        <div class="meta-icon">
+                            <i class="bi bi-building"></i>
+                        </div>
+                        <div class="meta-content">
+                            <div class="meta-title">Производитель</div>
+                            <div class="meta-value">{{ product.manufacturer.name }}</div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="action-buttons mt-auto">
+                    {% if product.stock_quantity > 0 %}
+                        <a href="{% url 'add_to_cart' product.id %}?next={{ request.path }}" 
+                           class="btn-cart">
+                            <i class="bi bi-cart-plus"></i>
+                            В корзину
+                        </a>
+                    {% else %}
+                        <button class="btn-cart" disabled>
+                            <i class="bi bi-x-circle"></i>
+                            Нет в наличии
+                        </button>
+                    {% endif %}
+                    <a href="{{ request.GET.next|default:'/' }}" class="btn-back">
+                        <i class="bi bi-arrow-left"></i>
+                        Назад
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Секция отзывов -->
+    <div class="reviews-section mt-5">
+        <h2 class="h3 mb-4">Отзывы о товаре</h2>
+        {% if product.review_set.all %}
+            {% for review in product.review_set.all %}
+                <div class="review-card">
+                    <div class="review-header">
+                        <div>
+                            <span class="review-author">{{ review.user.username }}</span>
+                            <div class="star-rating mt-1">
+                                {% for i in review.rating|ljust:5 %}
+                                    <i class="bi bi-star-fill"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <span class="review-date">{{ review.created_at|date:"d.m.Y" }}</span>
+                    </div>
+                    <p class="review-content mb-0">{{ review.comment }}</p>
+                </div>
+            {% endfor %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-chat-square-text display-4 text-muted mb-3"></i>
+                <p class="text-muted">Пока нет отзывов. Будьте первым!</p>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'add_review' product.id %}" class="btn btn-outline-honey">
+                        <i class="bi bi-plus-circle me-2"></i>Добавить отзыв
+                    </a>
+                {% endif %}
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

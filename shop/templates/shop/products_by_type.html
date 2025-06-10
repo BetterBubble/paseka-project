@@ -1,0 +1,27 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ title }} — Пасека Бабла{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+  <h2 class="text-center mb-4">Продукция категории: <span class="text-warning">{{ title }}</span></h2>
+
+  {% if products %}
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+      {% for product in products %}
+        <div class="col">
+          {% include 'shop/partials/product_card.html' with product=product next=request.path %}
+        </div>
+      {% endfor %}
+    </div>
+    <hr class="my-5">
+        <div class="container">
+        <h3 class="text-center mb-4 text-honey">О продукте</h3>
+        {% include "shop/category_info/"|add:type|add:".html" %}
+    </div>
+
+  {% else %}
+    <p class="text-center">В этой категории пока нет товаров.</p>
+  {% endif %}
+</div>
+{% endblock %}

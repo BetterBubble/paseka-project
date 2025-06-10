@@ -1,0 +1,98 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block title %}Контакты{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow border-0" style="background-color: #fff9e6;">
+                <div class="card-body p-4">
+                    <h2 class="card-title text-center mb-4" style="color: #8B4513;">Свяжитесь с нами</h2>
+                    <p class="text-center text-muted mb-4">Есть вопросы? Мы всегда рады помочь!</p>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-4 text-center mb-3 mb-md-0">
+                            <div class="d-inline-block p-3 rounded-circle mb-2" style="background-color: rgba(255, 165, 0, 0.1);">
+                                <i class="bi bi-telephone" style="font-size: 24px; color: #FFA500;"></i>
+                            </div>
+                            <h5 class="mb-2" style="color: #8B4513;">Телефон</h5>
+                            <p class="text-muted">+7 (999) 123-45-67</p>
+                        </div>
+                        <div class="col-md-4 text-center mb-3 mb-md-0">
+                            <div class="d-inline-block p-3 rounded-circle mb-2" style="background-color: rgba(255, 165, 0, 0.1);">
+                                <i class="bi bi-envelope" style="font-size: 24px; color: #FFA500;"></i>
+                            </div>
+                            <h5 class="mb-2" style="color: #8B4513;">Email</h5>
+                            <p class="text-muted">info@paseka.ru</p>
+                        </div>
+                        <div class="col-md-4 text-center">
+                            <div class="d-inline-block p-3 rounded-circle mb-2" style="background-color: rgba(255, 165, 0, 0.1);">
+                                <i class="bi bi-geo-alt" style="font-size: 24px; color: #FFA500;"></i>
+                            </div>
+                            <h5 class="mb-2" style="color: #8B4513;">Адрес</h5>
+                            <p class="text-muted">г. Москва, ул. Пчелиная, 123</p>
+                        </div>
+                    </div>
+
+                    {% if messages %}
+                    <div class="messages mb-4">
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Закрыть"></button>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <form method="post" class="needs-validation" novalidate>
+                        {% csrf_token %}
+                        {% for field in form %}
+                        <div class="mb-4">
+                            <label for="{{ field.id_for_label }}" class="form-label fw-semibold" style="color: #8B4513;">
+                                {{ field.label }}
+                            </label>
+                            {{ field }}
+                            {% if field.errors %}
+                            <div class="invalid-feedback d-block">
+                                {{ field.errors|join:", " }}
+                            </div>
+                            {% endif %}
+                            {% if field.help_text %}
+                            <div class="form-text text-muted">
+                                {{ field.help_text }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-honey btn-lg px-5 shadow-sm">
+                                <i class="bi bi-send me-2"></i>Отправить сообщение
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.btn-honey {
+    background-color: #FFA500;
+    border-color: #FF8C00;
+    color: white;
+}
+.btn-honey:hover {
+    background-color: #FF8C00;
+    border-color: #FFA500;
+    color: white;
+}
+.form-control:focus {
+    border-color: #FFA500;
+    box-shadow: 0 0 0 0.2rem rgba(255, 165, 0, 0.25);
+}
+</style>
+{% endblock %} 
