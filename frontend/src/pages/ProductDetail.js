@@ -13,10 +13,12 @@ const ProductDetail = () => {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
 
+  // Загрузка данных о товаре при изменении slug
   useEffect(() => {
     loadProduct();
   }, [productSlug]);
 
+  // Загрузка информации о товаре и отзывах
   const loadProduct = async () => {
     try {
       setLoading(true);
@@ -34,6 +36,7 @@ const ProductDetail = () => {
     }
   };
 
+  // Обработчик добавления товара в корзину
   const handleAddToCart = async () => {
     if (!user) {
       alert('Для добавления товаров в корзину необходимо войти в систему');
@@ -48,6 +51,7 @@ const ProductDetail = () => {
     }
   };
 
+  // Отображение состояния загрузки
   if (loading) {
     return (
       <div className="container py-5">
@@ -60,6 +64,7 @@ const ProductDetail = () => {
     );
   }
 
+  // Отображение ошибки, если товар не найден
   if (!product) {
     return (
       <div className="container py-5">
@@ -76,6 +81,7 @@ const ProductDetail = () => {
   return (
     <div className="container py-5">
       <div className="row">
+        {/* Изображение товара */}
         <div className="col-md-6 mb-4">
           {product.image_url && (
             <img 
@@ -84,15 +90,16 @@ const ProductDetail = () => {
               className="img-fluid rounded shadow"
               onError={(e) => {
                 e.target.style.display = 'none';
-                console.log('Ошибка загрузки изображения:', product.image_url);
               }}
             />
           )}
         </div>
         
+        {/* Информация о товаре */}
         <div className="col-md-6">
           <h1 className="text-honey mb-3">{product.name}</h1>
           
+          {/* Цена товара */}
           <div className="mb-3">
             {hasDiscount ? (
               <>
@@ -110,6 +117,7 @@ const ProductDetail = () => {
             )}
           </div>
 
+          {/* Рейтинг товара */}
           {product.average_rating > 0 && (
             <div className="mb-3">
               <span className="text-warning fs-5">
@@ -124,6 +132,7 @@ const ProductDetail = () => {
 
           <p className="mb-4">{product.description}</p>
 
+          {/* Дополнительная информация */}
           <div className="mb-3">
             <strong>Категория:</strong> {product.category?.name}
           </div>
@@ -132,6 +141,7 @@ const ProductDetail = () => {
             <strong>В наличии:</strong> {product.stock} шт.
           </div>
 
+          {/* Выбор количества */}
           <div className="row mb-4">
             <div className="col-md-4">
               <label htmlFor="quantity" className="form-label">Количество:</label>
@@ -147,6 +157,7 @@ const ProductDetail = () => {
             </div>
           </div>
 
+          {/* Кнопка добавления в корзину */}
           <button 
             className="btn btn-honey btn-lg"
             onClick={handleAddToCart}
@@ -158,7 +169,7 @@ const ProductDetail = () => {
         </div>
       </div>
 
-      {/* Отзывы */}
+      {/* Секция отзывов */}
       {reviews.length > 0 && (
         <div className="row mt-5">
           <div className="col-12">

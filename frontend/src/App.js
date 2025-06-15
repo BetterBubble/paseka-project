@@ -11,7 +11,6 @@ import ProductDetail from './pages/ProductDetail';
 import Cart from './pages/Cart';
 import About from './pages/About';
 import Contact from './pages/Contact';
-import TestImages from './pages/TestImages';
 import ImageStatus from './components/ImageStatus';
 
 function App() {
@@ -29,7 +28,6 @@ function App() {
               <Route path="/cart" element={<Cart />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
-              <Route path="/test-images" element={<TestImages />} />
               <Route path="/image-status" element={<ImageStatus />} />
             </Routes>
           </main>

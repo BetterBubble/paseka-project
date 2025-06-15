@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState(localStorage.getItem('authToken'));
 
+  // Проверяем авторизацию при изменении токена
   useEffect(() => {
     if (token) {
       checkAuth();
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
+  // Проверка валидности токена и получение данных пользователя
   const checkAuth = async () => {
     if (!token) {
       setUser(null);
@@ -24,7 +26,6 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      console.log('Проверяю авторизацию с токеном...');
       const response = await fetch('http://localhost:8000/api/current-user/', {
         method: 'GET',
         headers: {
@@ -32,11 +33,8 @@ export const AuthProvider = ({ children }) => {
         },
       });
       
-      console.log('Ответ сервера:', response.status, response.ok);
-      
       if (response.ok) {
         const data = await response.json();
-        console.log('Данные пользователя:', data);
         if (data.success && data.user) {
           setUser(data.user);
           // Уведомляем о том, что пользователь вошел в систему
@@ -47,13 +45,11 @@ export const AuthProvider = ({ children }) => {
           localStorage.removeItem('authToken');
         }
       } else {
-        console.log('Токен недействителен, статус:', response.status);
         setUser(null);
         setToken(null);
         localStorage.removeItem('authToken');
       }
     } catch (error) {
-      console.log('Ошибка проверки авторизации:', error);
       setUser(null);
       setToken(null);
       localStorage.removeItem('authToken');
@@ -62,6 +58,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Авторизация пользователя
   const login = async (username, password) => {
     try {
       const response = await fetch('http://localhost:8000/api/login/', {
@@ -78,15 +75,11 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // Сохраняем токен
+        // Сохраняем токен и данные пользователя
         const authToken = data.token;
         setToken(authToken);
         localStorage.setItem('authToken', authToken);
-        
-        // Устанавливаем пользователя
         setUser(data.user);
-        
-        // Уведомляем о том, что пользователь вошел в систему
         window.dispatchEvent(new CustomEvent('userLoggedIn'));
         
         return { success: true, message: data.message };
@@ -94,11 +87,11 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: data.error || 'Неверное имя пользователя или пароль' };
       }
     } catch (error) {
-      console.error('Ошибка входа:', error);
       return { success: false, error: 'Произошла ошибка при входе' };
     }
   };
 
+  // Выход из системы
   const logout = async () => {
     if (!token) {
       setUser(null);
@@ -113,15 +106,14 @@ export const AuthProvider = ({ children }) => {
         },
       });
 
-      // Независимо от ответа сервера, очищаем локальные данные
+      // Очищаем данные пользователя
       setUser(null);
       setToken(null);
       localStorage.removeItem('authToken');
       
       return { success: true };
     } catch (error) {
-      console.error('Ошибка выхода:', error);
-      // Все равно очищаем локальные данные
+      // В случае ошибки все равно очищаем данные
       setUser(null);
       setToken(null);
       localStorage.removeItem('authToken');
@@ -129,6 +121,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // Регистрация нового пользователя
   const register = async (username, email, password) => {
     try {
       const response = await fetch('http://localhost:8000/api/register/', {
@@ -146,12 +139,11 @@ export const AuthProvider = ({ children }) => {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        // После успешной регистрации автоматически входим
+        // Автоматический вход после регистрации
         if (data.token) {
           setToken(data.token);
           localStorage.setItem('authToken', data.token);
           setUser(data.user);
-          // Уведомляем о том, что пользователь вошел в систему
           window.dispatchEvent(new CustomEvent('userLoggedIn'));
         }
         return { success: true, message: data.message };
@@ -159,7 +151,6 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: data.error || 'Ошибка регистрации' };
       }
     } catch (error) {
-      console.error('Ошибка регистрации:', error);
       return { success: false, error: 'Произошла ошибка при регистрации' };
     }
   };

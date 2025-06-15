@@ -7,8 +7,8 @@ const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
 
+  // Проверка наличия данных о товаре
   if (!product) {
-    console.error('ProductCard: product is undefined');
     return <div className="card h-100 product-card shadow-sm">
       <div className="card-body">
         <p>Ошибка: товар не найден</p>
@@ -16,6 +16,7 @@ const ProductCard = ({ product }) => {
     </div>;
   }
 
+  // Обработчик добавления товара в корзину
   const handleAddToCart = async (e) => {
     e.preventDefault();
     e.stopPropagation();
@@ -55,7 +56,6 @@ const ProductCard = ({ product }) => {
               e.target.style.display = 'flex';
               e.target.style.alignItems = 'center';
               e.target.style.justifyContent = 'center';
-              console.log('Ошибка загрузки изображения:', product.image_url);
             }}
           />
         ) : (
@@ -67,6 +67,7 @@ const ProductCard = ({ product }) => {
           </div>
         )}
         
+        {/* Бейдж скидки */}
         {hasDiscount && (
           <div className="position-absolute top-0 start-0 m-2">
             <span className="badge bg-danger">
@@ -87,6 +88,7 @@ const ProductCard = ({ product }) => {
             </Link>
           </h5>
 
+          {/* Секция с ценой */}
           <div className="price-section mb-3">
             {hasDiscount ? (
               <div>
@@ -104,6 +106,7 @@ const ProductCard = ({ product }) => {
             )}
           </div>
 
+          {/* Рейтинг товара */}
           {product.average_rating > 0 && (
             <div className="mb-2">
               <span className="text-warning">
@@ -117,6 +120,7 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
+        {/* Кнопки действий */}
         <div className="mt-auto">
           <div className="d-grid gap-2">
             <button 
