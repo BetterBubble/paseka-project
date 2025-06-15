@@ -24,7 +24,7 @@ from django.contrib.auth import authenticate
 from .models import AuthToken
 
 def asexam_view(request):
-    exams = asexam.objects.filter(is_public=True)
+    exams = asexam.objects.select_related('user').filter(is_public=True)
     return render(request, 'asexam.html', {
         'exams': exams,
         'full_name': 'Александр Шульга',
@@ -39,10 +39,10 @@ def avg_price(request):
 
 def home(request):
     # Последние товары (3 последних по дате создания или ID)
-    latest_products = Product.objects.order_by('-id')[:3]
+    latest_products = Product.objects.available().select_related('category', 'manufacturer', 'region').order_by('-id')[:3]
 
     # Все товары с изображением, по убыванию цены
-    product_list = Product.objects.available()\
+    product_list = Product.objects.available().select_related('category', 'manufacturer', 'region')\
         .exclude(image__isnull=True)\
         .order_by('-price')
 
@@ -65,26 +65,30 @@ def home(request):
     })
 
 def product_detail(request, pk):
-    product = get_object_or_404(Product, pk=pk)
+    product = get_object_or_404(
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .prefetch_related('reviews', 'reviews__user'),
+        pk=pk
+    )
     return render(request, 'shop/product_detail.html', {'product': product})
 
 def honey_products(request):
     # 1. filter: только мед
-    honey = Product.objects.filter(product_type='honey')
+    honey = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type='honey')
     return render(request, 'shop/honey_list.html', {'products': honey})
 
 def products_with_image(request):
     # 2. exclude: исключаем товары без изображения
-    with_image = Product.objects.exclude(image='')
+    with_image = Product.objects.select_related('category', 'manufacturer', 'region').exclude(image='')
     return render(request, 'shop/products_with_image.html', {'products': with_image})
 
 def expensive_products(request):
     # 3. order_by: сортировка по цене (убывание)
-    expensive = Product.objects.order_by('-price')
+    expensive = Product.objects.select_related('category', 'manufacturer', 'region').order_by('-price')
     return render(request, 'shop/expensive_products.html', {'products': expensive})
 
 def altai_products(request):
-    products = Product.objects.filter(region__name__icontains='алтай')
+    products = Product.objects.select_related('category', 'manufacturer', 'region').filter(region__name__icontains='алтай')
     return render(request, 'shop/honey_list.html', {'products': products})
 
 def signup(request):
@@ -121,7 +125,7 @@ PRODUCT_TYPE_TITLES = {
 
 
 def products_by_type(request, type):
-    products = Product.objects.filter(product_type=type)
+    products = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type=type)
     title = PRODUCT_TYPE_TITLES.get(type, 'Категория')
     return render(request, 'shop/products_by_type.html', {
         'products': products,
@@ -258,13 +262,12 @@ def create_order(request):
     })
 
 def order_detail(request, order_id):
-    order = get_object_or_404(Order, id=order_id, user=request.user)
-    # Используем связь ManyToManyField для получения товаров
-    order_items = order.orderitem_set.all().select_related('product')
-    return render(request, 'shop/order/detail.html', {
-        'order': order,
-        'items': order_items
-    })
+    order = get_object_or_404(
+        Order.objects.select_related('user', 'delivery_method')
+        .prefetch_related('products', 'orderitem_set'),
+        id=order_id
+    )
+    return render(request, 'shop/order_detail.html', {'order': order})
 
 def search(request):
     query = request.GET.get('q', '')
