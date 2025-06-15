@@ -3,7 +3,7 @@ from .models import Product
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from shop.models import Product
 from .models import asexam
 from django.db.models import Avg
@@ -14,6 +14,14 @@ from django.core.mail import send_mail
 from django.conf import settings
 from .forms import OrderCreateForm
 from .models import Order, OrderItem
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
+from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.contrib.auth.models import User
+import json
+from django.contrib.auth import authenticate
+from .models import AuthToken
 
 def asexam_view(request):
     exams = asexam.objects.filter(is_public=True)
@@ -257,3 +265,207 @@ def order_detail(request, order_id):
         'order': order,
         'items': order_items
     })
+
+def search(request):
+    query = request.GET.get('q', '')
+    results = []
+    if query:
+        results = Product.objects.filter(name__icontains=query)
+    return render(request, 'shop/search_results.html', {'query': query, 'results': results})
+
+@ensure_csrf_cookie
+@require_http_methods(["GET"])
+def get_csrf_token(request):
+    """API endpoint для получения CSRF токена"""
+    return JsonResponse({'csrfToken': get_token(request)})
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def register_user(request):
+    """API endpoint для регистрации пользователей"""
+    try:
+        data = json.loads(request.body)
+        username = data.get('username')
+        email = data.get('email')
+        password = data.get('password')
+        
+        # Валидация
+        if not username or not email or not password:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Все поля обязательны для заполнения'
+            }, status=400)
+        
+        if len(password) < 6:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Пароль должен содержать минимум 6 символов'
+            }, status=400)
+        
+        # Проверка на существование пользователя
+        if User.objects.filter(username=username).exists():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Пользователь с таким именем уже существует'
+            }, status=400)
+        
+        if User.objects.filter(email=email).exists():
+            return JsonResponse({
+                'success': False, 
+                'error': 'Пользователь с таким email уже существует'
+            }, status=400)
+        
+        # Создание пользователя
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password
+        )
+        
+        # Создаем токен для автоматического входа
+        token = AuthToken.objects.create(user=user)
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Регистрация прошла успешно!',
+            'token': token.token,
+            'user': {
+                'id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+        })
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Неверный формат данных'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Произошла ошибка при регистрации'
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def login_user(request):
+    """API endpoint для авторизации пользователей с токенами"""
+    try:
+        data = json.loads(request.body)
+        username = data.get('username')
+        password = data.get('password')
+        
+        # Валидация
+        if not username or not password:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Имя пользователя и пароль обязательны'
+            }, status=400)
+        
+        # Аутентификация
+        user = authenticate(request, username=username, password=password)
+        
+        if user is not None:
+            if user.is_active:
+                # Удаляем старые токены пользователя
+                AuthToken.objects.filter(user=user).delete()
+                
+                # Создаем новый токен
+                token = AuthToken.objects.create(user=user)
+                
+                return JsonResponse({
+                    'success': True,
+                    'message': 'Вход выполнен успешно!',
+                    'token': token.token,
+                    'user': {
+                        'id': user.id,
+                        'username': user.username,
+                        'email': user.email
+                    }
+                })
+            else:
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Аккаунт деактивирован'
+                }, status=400)
+        else:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Неверное имя пользователя или пароль'
+            }, status=400)
+        
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Неверный формат данных'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False, 
+            'error': 'Произошла ошибка при входе'
+        }, status=500)
+
+@csrf_exempt
+@require_http_methods(["GET"])
+def current_user(request):
+    """API endpoint для получения данных текущего пользователя по токену"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({
+            'success': False,
+            'error': 'Токен авторизации не предоставлен'
+        }, status=401)
+    
+    token_value = auth_header.split(' ')[1]
+    
+    try:
+        token = AuthToken.objects.get(token=token_value)
+        if token.is_valid():
+            return JsonResponse({
+                'success': True,
+                'user': {
+                    'id': token.user.id,
+                    'username': token.user.username,
+                    'email': token.user.email,
+                    'is_authenticated': True
+                }
+            })
+        else:
+            # Токен истек, удаляем его
+            token.delete()
+            return JsonResponse({
+                'success': False,
+                'error': 'Токен истек'
+            }, status=401)
+    except AuthToken.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Недействительный токен'
+        }, status=401)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def logout_user(request):
+    """API endpoint для выхода из системы (удаление токена)"""
+    auth_header = request.headers.get('Authorization')
+    if not auth_header or not auth_header.startswith('Bearer '):
+        return JsonResponse({
+            'success': False,
+            'error': 'Токен авторизации не предоставлен'
+        }, status=401)
+    
+    token_value = auth_header.split(' ')[1]
+    
+    try:
+        token = AuthToken.objects.get(token=token_value)
+        token.delete()
+        return JsonResponse({
+            'success': True,
+            'message': 'Выход выполнен успешно'
+        })
+    except AuthToken.DoesNotExist:
+        return JsonResponse({
+            'success': False,
+            'error': 'Недействительный токен'
+        }, status=401)

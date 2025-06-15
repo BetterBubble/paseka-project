@@ -2,6 +2,8 @@ from django.db import models
 from django.urls import reverse
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.utils.text import slugify
+import secrets
 
 class asexam(models.Model):
     title = models.CharField(max_length=255, verbose_name="Название экзамена")
@@ -20,6 +22,7 @@ class ProductManager(models.Manager):
 
 class Category(models.Model):
     name = models.CharField("Название категории", max_length=100)
+    slug = models.SlugField("URL", max_length=100, blank=True, null=True)
     description = models.TextField("Описание", blank=True)
 
     class Meta:
@@ -28,6 +31,11 @@ class Category(models.Model):
 
     def __str__(self):
         return self.name
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
 
 
 class Manufacturer(models.Model):
@@ -55,6 +63,7 @@ class Region(models.Model):
 
 class Product(models.Model):
     name = models.CharField("Название товара", max_length=200)
+    slug = models.SlugField("URL", max_length=200, blank=True, null=True)
     description = models.TextField("Описание")
     price = models.DecimalField("Цена", max_digits=10, decimal_places=2)
     discount_price = models.DecimalField("Цена со скидкой", max_digits=10, decimal_places=2, blank=True, null=True)
@@ -65,6 +74,8 @@ class Product(models.Model):
     region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='products', verbose_name='Регион')
     objects = ProductManager()
     created_at = models.DateTimeField(default=timezone.now, verbose_name='Дата добавления')
+    updated = models.DateTimeField(auto_now=True, verbose_name='Дата обновления')
+    available = models.BooleanField("Доступен", default=True)
     PRODUCT_TYPES = [
         ('honey', 'Мёд'),
         ('comb', 'Соты'),
@@ -95,6 +106,58 @@ class Product(models.Model):
             discount = self.price - self.discount_price
             return int((discount / self.price) * 100)
         return 0
+    
+    @property
+    def stock(self):
+        return self.stock_quantity
+    
+    @property
+    def created(self):
+        return self.created_at
+    
+    def average_rating(self):
+        reviews = self.reviews.all()
+        if reviews:
+            return sum(review.rating for review in reviews) / len(reviews)
+        return 0
+    
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = slugify(self.name)
+        super().save(*args, **kwargs)
+
+
+class Cart(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
+    created = models.DateTimeField(auto_now_add=True, verbose_name="Создана")
+    
+    class Meta:
+        verbose_name = "Корзина"
+        verbose_name_plural = "Корзины"
+    
+    def __str__(self):
+        return f"Корзина {self.user.username}"
+    
+    def get_total_price(self):
+        return sum(item.get_total_price() for item in self.items.all())
+
+
+class CartItem(models.Model):
+    cart = models.ForeignKey(Cart, related_name='items', on_delete=models.CASCADE, verbose_name="Корзина")
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name="Товар")
+    quantity = models.PositiveIntegerField("Количество", default=1)
+    
+    class Meta:
+        verbose_name = "Товар в корзине"
+        verbose_name_plural = "Товары в корзине"
+        unique_together = ('cart', 'product')
+    
+    def __str__(self):
+        return f"{self.product.name} x{self.quantity}"
+    
+    def get_total_price(self):
+        price = self.product.discount_price or self.product.price
+        return price * self.quantity
 
 class DeliveryMethod(models.Model):
     name = models.CharField("Способ доставки", max_length=100)
@@ -164,7 +227,7 @@ class OrderItem(models.Model):
 
 
 class Review(models.Model):
-    product = models.ForeignKey("Product", verbose_name="Товар", on_delete=models.CASCADE)
+    product = models.ForeignKey("Product", verbose_name="Товар", on_delete=models.CASCADE, related_name='reviews')
     user = models.ForeignKey('auth.User', verbose_name="Пользователь", on_delete=models.CASCADE)
     rating = models.IntegerField("Оценка", choices=[(i, str(i)) for i in range(1, 6)])
     comment = models.TextField("Комментарий", blank=True)
@@ -176,6 +239,10 @@ class Review(models.Model):
 
     def __str__(self):
         return f"{self.user} о {self.product}"
+    
+    @property
+    def created(self):
+        return self.created_at
 
 class Contact(models.Model):
     name = models.CharField("Имя", max_length=100)
@@ -228,3 +295,29 @@ class Feedback(models.Model):
         self.is_processed = True
         self.responded_at = timezone.now()
         self.save()
+
+class AuthToken(models.Model):
+    """Модель для токенов авторизации"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='auth_tokens')
+    token = models.CharField(max_length=64, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = secrets.token_urlsafe(32)
+        if not self.expires_at:
+            from django.utils import timezone
+            from datetime import timedelta
+            self.expires_at = timezone.now() + timedelta(days=7)  # Токен действует 7 дней
+        super().save(*args, **kwargs)
+    
+    def is_valid(self):
+        from django.utils import timezone
+        return timezone.now() < self.expires_at
+    
+    class Meta:
+        db_table = 'shop_auth_token'
+    
+    def __str__(self):
+        return f"Token for {self.user.username}"

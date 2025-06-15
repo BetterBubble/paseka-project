@@ -18,8 +18,8 @@
       </p>
     </div>
     <div class="card-footer bg-transparent border-0 d-flex justify-content-around pb-3">
-      <a class="btn btn-outline-honey btn-sm" href="{{ product.get_absolute_url }}?next={{ next }}">Подробнее</a>
-      <a class="btn btn-honey btn-sm" href="{% url 'add_to_cart' product.id %}?next={{ request.path }}">В корзину</a>
+      <button class="btn btn-outline-honey btn-sm btn-details" data-url="{{ product.get_absolute_url }}">Подробнее</button>
+      <button class="btn btn-honey btn-sm btn-add-to-cart" data-url="{% url 'add_to_cart' product.id %}">В корзину</button>
     </div>
   </div>
 </div>

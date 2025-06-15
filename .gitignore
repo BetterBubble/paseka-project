@@ -12,12 +12,45 @@ db.sqlite3
 # VS Code
 .vscode/
 
+# PyCharm
+.idea/
+
 # Mac
 .DS_Store
 
 # Media
 /media/
+media/
 
 # Virtualenv
 venv/
 env/
+
+# Node/React
+node_modules/
+build/
+dist/
+coverage/
+.cache/
+
+# Django static
+staticfiles/
+
+# Сгенерированные ассеты (React build)
+shop/static/shop/react/assets/
+shop/static/shop/assets/
+
+# Миграции pycache
+shop/migrations/__pycache__/
+shop/templatetags/__pycache__/
+med_site/__pycache__/
+
+# Личные/тестовые файлы
+*.sqlite3
+*.pyc
+*.pyo
+*.pyd
+
+# npm/yarn lock-файлы (опционально, если не используете совместно)
+# yarn.lock
+# package-lock.json

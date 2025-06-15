@@ -1,0 +1,18 @@
+{% extends "shop/base.html" %}
+{% block content %}
+<h1>Результаты поиска</h1>
+{% if query %}
+    <p>Поиск по запросу: <strong>{{ query }}</strong></p>
+    {% if results %}
+        <ul>
+        {% for product in results %}
+            <li><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></li>
+        {% endfor %}
+        </ul>
+    {% else %}
+        <p>Ничего не найдено.</p>
+    {% endif %}
+{% else %}
+    <p>Введите поисковый запрос.</p>
+{% endif %}
+{% endblock %} 

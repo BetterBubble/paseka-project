@@ -10,38 +10,138 @@
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Slab:wght@400;700&display=swap" rel="stylesheet">
     <!-- Bootstrap icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.5.0/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Стили -->
-    <link rel="stylesheet" href="{% static 'shop/css/styles.css' %}">
-    <link rel="stylesheet" href="{% static 'shop/css/header.css' %}">
-    <link rel="stylesheet" href="{% static 'shop/css/cards.css' %}">
-    <link rel="stylesheet" href="{% static 'shop/css/custom.css' %}">
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Только print стили для Django -->
+    <link rel="stylesheet" href="{% static 'shop/css/print.css' %}" media="print">
+    
+    <!-- Базовые стили для Django страниц -->
+    <style>
+        :root {
+            --honey-color: #f4a460;
+            --dark-honey: #daa520;
+            --text-dark: #3e2c00;
+        }
+        
+        body {
+            background: linear-gradient(to bottom, #fff7e6, #fff4cc) !important;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        
+        .btn-honey {
+            background-color: var(--honey-color) !important;
+            border-color: var(--honey-color) !important;
+            color: white !important;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-honey:hover {
+            background-color: var(--dark-honey) !important;
+            border-color: var(--dark-honey) !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+        
+        .btn-honey-light {
+            background-color: transparent !important;
+            border: 2px solid var(--honey-color) !important;
+            color: var(--honey-color) !important;
+            font-weight: 600;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-honey-light:hover {
+            background-color: var(--honey-color) !important;
+            color: white !important;
+            transform: translateY(-2px);
+        }
+        
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(244, 164, 96, 0.2);
+        }
+        
+        .navbar.scrolled {
+            background: rgba(255, 255, 255, 0.98) !important;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .nav-link {
+            color: var(--text-dark) !important;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border-radius: 0.5rem;
+        }
+        
+        .nav-link:hover,
+        .nav-link.active {
+            color: var(--honey-color) !important;
+            background: rgba(244, 164, 96, 0.1);
+        }
+        
+        .dropdown-menu {
+            border: 1px solid rgba(244, 164, 96, 0.2);
+            border-radius: 1rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .dropdown-item:hover {
+            background: rgba(244, 164, 96, 0.1);
+            color: var(--honey-color);
+        }
+        
+        .bg-footer {
+            background-color: var(--text-dark) !important;
+        }
+        
+        .cart-icon {
+            position: relative;
+        }
+        
+        .cart-icon .badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+    </style>
+    
     {% block extra_css %}{% endblock %}
     <link rel="icon" type="image/x-icon" href="{% static 'shop/assets/favicon.ico' %}">
 </head>
 <body>
-    <!-- Навигация -->
-    <nav class="navbar navbar-expand-lg navbar-light py-3" id="mainNav">
-        <div class="container px-4 px-lg-5">
-            <a class="navbar-brand" href="{% url 'index' %}">
-                <i class="bi bi-flower1 me-2"></i>Пасека Бабла
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarSupportedContent">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+    <!-- Новый современный хедер -->
+    <nav class="navbar navbar-expand-lg navbar-light py-3 shadow-sm" id="mainNav">
+        <div class="container-fluid px-4 px-lg-5">
+            <div class="d-flex align-items-center w-100 justify-content-between">
+                <!-- Логотип -->
+                <a class="navbar-brand d-flex align-items-center gap-2" href="{% url 'index' %}">
+                    <i class="bi bi-flower1" style="font-size: 2rem;"></i>
+                    <span class="fs-4 fw-bold" style="font-family: 'Roboto Slab', serif; color: #8B4513;">Пасека Бабла</span>
+                </a>
+                <!-- Главное меню -->
+                <ul class="navbar-nav flex-row gap-3 align-items-center mx-auto">
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'index' %}">
+                        <a class="nav-link px-3 {% if request.path == '/' %}active{% endif %}" href="{% url 'index' %}">
                             <i class="bi bi-house-door me-1"></i>Главная
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link {% if request.path == '/about/' %}active{% endif %}" href="{% url 'about' %}">
+                        <a class="nav-link px-3 {% if request.path == '/about/' %}active{% endif %}" href="{% url 'about' %}">
                             <i class="bi bi-info-circle me-1"></i>О нас
                         </a>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link px-3 dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-grid me-1"></i>Категории
                         </a>
                         <ul class="dropdown-menu shadow-sm rounded-3">
@@ -53,7 +153,7 @@
                         </ul>
                     </li>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link px-3 dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="bi bi-chat me-1"></i>Связаться с нами
                         </a>
                         <ul class="dropdown-menu shadow-sm rounded-3">
@@ -62,13 +162,14 @@
                         </ul>
                     </li>
                 </ul>
+                <!-- Корзина и профиль -->
                 <div class="d-flex align-items-center gap-3">
                     <a href="{% url 'cart_detail' %}" class="btn btn-honey btn-sm d-flex align-items-center gap-2 px-3 position-relative cart-icon">
                         <i class="bi-cart-fill"></i>
-                        <span>Корзиночка</span>
+                        <span>Корзина</span>
                         {% if cart_total_items > 0 %}
                             <span class="badge bg-dark text-white rounded-pill ms-2">
-                                {{ cart_total_items }}
+                            {{ cart_total_items }}
                             </span>
                         {% endif %}
                     </a>

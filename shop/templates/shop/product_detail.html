@@ -357,18 +357,18 @@
         <!-- Изображение продукта -->
         <div class="col-lg-6 h-100">
             <div class="product-image-container">
-                {% if product.image %}
+        {% if product.image %}
                     <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-main-image">
-                {% else %}
+        {% else %}
                     <img src="{% static 'shop/assets/default-honey.jpg' %}" alt="Нет изображения" class="product-main-image">
                 {% endif %}
                 {% if product.discount_price %}
                     <div class="discount-label">
                         -{{ product.get_discount_percentage }}%
                     </div>
-                {% endif %}
+        {% endif %}
             </div>
-        </div>
+      </div>
 
         <!-- Информация о продукте -->
         <div class="col-lg-6">
@@ -379,28 +379,28 @@
                 </div>
 
                 <div class="price-section d-flex align-items-baseline">
-                    {% if product.discount_price %}
+          {% if product.discount_price %}
                         <span class="current-price">{{ product.discount_price }} ₽</span>
                         <span class="old-price">{{ product.price }} ₽</span>
-                    {% else %}
+          {% else %}
                         <span class="current-price">{{ product.price }} ₽</span>
-                    {% endif %}
-                </div>
+          {% endif %}
+        </div>
 
-                {% if product.stock_quantity > 0 %}
+            {% if product.stock_quantity > 0 %}
                     <div class="stock-badge in-stock">
                         <i class="bi bi-check-circle-fill me-2"></i>
                         В наличии: {{ product.stock_quantity }} шт.
                     </div>
-                {% else %}
+            {% else %}
                     <div class="stock-badge out-of-stock">
                         <i class="bi bi-x-circle-fill me-2"></i>
                         Нет в наличии
                     </div>
-                {% endif %}
+            {% endif %}
 
                 <div class="product-meta-grid">
-                    {% if product.product_type %}
+        {% if product.product_type %}
                     <div class="meta-card">
                         <div class="meta-icon">
                             <i class="bi bi-box-seam"></i>
@@ -409,10 +409,10 @@
                             <div class="meta-title">Вид продукции</div>
                             <div class="meta-value">{{ product.get_product_type_display }}</div>
                         </div>
-                    </div>
-                    {% endif %}
+          </div>
+        {% endif %}
 
-                    {% if product.category %}
+          {% if product.category %}
                     <div class="meta-card">
                         <div class="meta-icon">
                             <i class="bi bi-grid"></i>
@@ -422,9 +422,9 @@
                             <div class="meta-value">{{ product.category.name }}</div>
                         </div>
                     </div>
-                    {% endif %}
+          {% endif %}
 
-                    {% if product.region %}
+          {% if product.region %}
                     <div class="meta-card">
                         <div class="meta-icon">
                             <i class="bi bi-geo-alt"></i>
@@ -434,9 +434,9 @@
                             <div class="meta-value">{{ product.region.name }}</div>
                         </div>
                     </div>
-                    {% endif %}
+          {% endif %}
 
-                    {% if product.manufacturer %}
+          {% if product.manufacturer %}
                     <div class="meta-card">
                         <div class="meta-icon">
                             <i class="bi bi-building"></i>
@@ -446,22 +446,22 @@
                             <div class="meta-value">{{ product.manufacturer.name }}</div>
                         </div>
                     </div>
-                    {% endif %}
+          {% endif %}
                 </div>
 
                 <div class="action-buttons mt-auto">
-                    {% if product.stock_quantity > 0 %}
+          {% if product.stock_quantity > 0 %}
                         <a href="{% url 'add_to_cart' product.id %}?next={{ request.path }}" 
                            class="btn-cart">
                             <i class="bi bi-cart-plus"></i>
                             В корзину
                         </a>
-                    {% else %}
+          {% else %}
                         <button class="btn-cart" disabled>
                             <i class="bi bi-x-circle"></i>
                             Нет в наличии
                         </button>
-                    {% endif %}
+          {% endif %}
                     <a href="{{ request.GET.next|default:'/' }}" class="btn-back">
                         <i class="bi bi-arrow-left"></i>
                         Назад
@@ -469,7 +469,7 @@
                 </div>
             </div>
         </div>
-    </div>
+      </div>
 
     <!-- Секция отзывов -->
     <div class="reviews-section mt-5">
@@ -503,5 +503,5 @@
             </div>
         {% endif %}
     </div>
-</div>
+  </div>
 {% endblock %}

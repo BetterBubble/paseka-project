@@ -46,8 +46,24 @@ urlpatterns = [
     path('contact/', contact_view, name='contact'),
     path('feedback/', feedback_view, name='feedback'),
     path('product/<int:product_id>/review/', add_review, name='add_review'),
+    path('search/', views.search, name='search'),
+
+    # API URLs (основные для SPA)
+    path('api/', include('shop.api_urls')),
+    path('api-auth/', include('rest_framework.urls')),
+
+    # Старые Django views (для совместимости)
+    path('django/', views.home, name='django_home'),
+    path('django/about/', views.about, name='django_about'),
+    path('django/contact/', views.contact_view, name='django_contact'),
+    path('django/asexam/', views.asexam_view, name='django_asexam'),
 ]
 
+# Медиафайлы и статические файлы должны работать всегда
+urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+
+# Для разработки также добавляем STATICFILES_DIRS
 if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static('/static/', document_root=settings.BASE_DIR / 'shop/static')
     urlpatterns += [path('__debug__/', include('debug_toolbar.urls'))]

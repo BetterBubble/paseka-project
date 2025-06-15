@@ -58,15 +58,24 @@
 <section class="py-4">
     <div class="container">
         <h2 class="h3 mb-4 text-center">Все товары</h2>
+        <!-- Поиск по товарам -->
+        <form class="d-flex justify-content-center mb-4" action="{% url 'search' %}" method="GET">
+            <div class="input-group" style="max-width: 400px;">
+                <input type="search" class="form-control" placeholder="Поиск товаров..." name="q" aria-label="Поиск" inputmode="search">
+                <button class="btn btn-honey" type="submit">
+                    <i class="bi bi-search"></i>
+                </button>
+            </div>
+        </form>
         <div class="row g-4">
-            {% for product in products %}
+    {% for product in products %}
             <div class="col-12 col-sm-6 col-md-3">
                 <div class="product-card">
                     <div class="position-relative overflow-hidden">
-                        {% if product.image %}
+                {% if product.image %}
                         <img src="{{ product.image.url }}" alt="{{ product.name }}" class="product-image">
-                        {% endif %}
-                        {% if product.discount_price %}
+                {% endif %}
+                    {% if product.discount_price %}
                         <div class="discount-badge d-inline-flex align-items-center">
                             <span>-{{ product.price|subtract:product.discount_price|percentage:product.price }}%</span>
                         </div>
@@ -78,55 +87,58 @@
                             {% if product.discount_price %}
                             <span class="old-price">{{ product.price }} ₽</span>
                             <span class="fw-bold">{{ product.discount_price }} ₽</span>
-                            {% else %}
+                    {% else %}
                             <span class="fw-bold">{{ product.price }} ₽</span>
-                            {% endif %}
-                        </div>
+                    {% endif %}
+                </div>
                         <div class="d-flex gap-2">
                             <a href="{{ product.get_absolute_url }}" class="btn btn-outline-honey btn-sm flex-grow-1">Подробнее</a>
                             <a href="{% url 'add_to_cart' product.id %}?next={{ request.path }}" class="btn btn-honey btn-sm flex-grow-1">В корзину</a>
                         </div>
-                    </div>
                 </div>
             </div>
-            {% empty %}
-            <div class="col-12">
-                <p class="text-center">Нет товаров для отображения.</p>
-            </div>
-            {% endfor %}
         </div>
+    {% empty %}
+            <div class="col-12">
+        <p class="text-center">Нет товаров для отображения.</p>
+            </div>
+    {% endfor %}
+    </div>
 
-        <!-- Пагинация -->
-        {% if page_obj.has_other_pages %}
+    <!-- Пагинация -->
+    {% if page_obj.has_other_pages %}
         <nav class="mt-4">
             <ul class="pagination justify-content-center">
-                {% if page_obj.has_previous %}
-                <li class="page-item">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
                     <a class="page-link" href="?page={{ page_obj.previous_page_number }}">← Назад</a>
-                </li>
-                {% endif %}
+            </li>
+            {% endif %}
 
-                {% for num in page_obj.paginator.page_range %}
-                    {% if page_obj.number == num %}
-                    <li class="page-item active">
+            {% for num in page_obj.paginator.page_range %}
+            {% if page_obj.number == num %}
+                <li class="page-item active">
                         <span class="page-link">{{ num }}</span>
-                    </li>
-                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
-                    </li>
-                    {% endif %}
-                {% endfor %}
-
-                {% if page_obj.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд →</a>
                 </li>
-                {% endif %}
-            </ul>
-        </nav>
-        {% endif %}
-    </div>
+            {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item">
+                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                </li>
+            {% endif %}
+            {% endfor %}
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                    <a class="page-link" href="?page={{ page_obj.next_page_number }}">Вперёд →</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
 </section>
 
+{% endblock %}
+{% block extra_js %}
+<script src="{% static 'shop/js/product-actions.js' %}"></script>
 {% endblock %}
