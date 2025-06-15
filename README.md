@@ -1,39 +1,60 @@
-# Paseka Project
+# Интернет-магазин "Пчеловодство"
 
-Проект интернет-магазина медовой продукции.
+Проект интернет-магазина продуктов пчеловодства, разработанный с использованием Django и React.
 
-## Структура проекта
+## Описание проекта
 
-```
-paseka_project/
-├── backend/                 # Django backend
-│   ├── med_site/           # Django project
-│   ├── shop/               # Django app
-│   ├── manage.py
-│   └── requirements.txt
-├── frontend/               # React frontend
-│   ├── src/               # React source code
-│   ├── public/            # Static files
-│   ├── package.json
-│   └── webpack.config.js
-├── media/                 # User uploaded files
-├── static/               # Static files
-└── docs/                 # Documentation
-    └── IMAGES_README.md
-```
+Интернет-магазин специализируется на продаже продуктов пчеловодства:
+- Мед различных сортов
+- Прополис
+- Пчелиный воск
+- Пчелиная пыльца
+- Соты
+
+### Основные функции
+- Каталог товаров с категориями
+- Поиск по товарам
+- Корзина покупок
+- Система аутентификации
+- Личный кабинет пользователя
+- Административная панель
+
+## Технологии
+
+### Backend
+- Python 3.x
+- Django 4.x
+- Django REST Framework
+- PostgreSQL
+- JWT Authentication
+
+### Frontend
+- React 18.x
+- React Router
+- Axios
+- Webpack
+- CSS3/SCSS
 
 ## Установка и запуск
 
-### Backend (Django)
+### Предварительные требования
+- Python 3.x
+- Node.js 16.x или выше
+- npm или yarn
+- PostgreSQL
 
-1. Перейдите в директорию backend:
+### Backend
+
+1. Клонируйте репозиторий:
 ```bash
-cd backend
+git clone <repository-url>
+cd paseka_project
 ```
 
-2. Создайте виртуальное окружение и активируйте его:
+2. Создайте и активируйте виртуальное окружение:
 ```bash
-python3 -m venv venv
+cd backend
+python -m venv venv
 source venv/bin/activate  # для Linux/Mac
 # или
 venv\Scripts\activate  # для Windows
@@ -44,17 +65,29 @@ venv\Scripts\activate  # для Windows
 pip install -r requirements.txt
 ```
 
-4. Примените миграции:
-```bash
-python3 manage.py migrate
+4. Создайте файл .env в директории backend и настройте переменные окружения:
+```
+DEBUG=True
+SECRET_KEY=your-secret-key
+DATABASE_URL=postgresql://user:password@localhost:5432/dbname
 ```
 
-5. Запустите сервер разработки:
+5. Примените миграции:
 ```bash
-python3 manage.py runserver
+python manage.py migrate
 ```
 
-### Frontend (React)
+6. Создайте суперпользователя:
+```bash
+python manage.py createsuperuser
+```
+
+7. Запустите сервер разработки:
+```bash
+python manage.py runserver
+```
+
+### Frontend
 
 1. Перейдите в директорию frontend:
 ```bash
@@ -71,11 +104,70 @@ npm install
 npm start
 ```
 
+## Структура проекта
+
+```
+paseka_project/
+├── backend/                 # Django backend
+│   ├── med_site/           # Основной проект Django
+│   ├── shop/               # Приложение магазина
+│   │   ├── api/           # API endpoints
+│   │   ├── models/        # Модели данных
+│   │   ├── serializers/   # Сериализаторы
+│   │   ├── templates/     # HTML шаблоны
+│   │   └── views/         # Представления
+│   └── requirements.txt    # Зависимости Python
+│
+├── frontend/               # React frontend
+│   ├── public/            # Статические файлы
+│   ├── src/               # Исходный код
+│   │   ├── components/    # React компоненты
+│   │   ├── context/       # React контексты
+│   │   ├── pages/         # Страницы приложения
+│   │   ├── services/      # API сервисы
+│   │   └── styles/        # CSS стили
+│   └── package.json       # Зависимости Node.js
+│
+├── media/                 # Загруженные файлы
+├── staticfiles/          # Собранные статические файлы
+└── docs/                 # Документация проекта
+```
+
+## API Endpoints
+
+### Аутентификация
+- POST /api/login/ - Вход в систему
+- POST /api/logout/ - Выход из системы
+- GET /api/current-user/ - Информация о текущем пользователе
+
+### Товары
+- GET /api/products/ - Список товаров
+- GET /api/products/{id}/ - Детали товара
+- GET /api/categories/ - Список категорий
+
+### Корзина
+- GET /api/cart/ - Получить корзину
+- POST /api/cart/add_item/ - Добавить товар
+- POST /api/cart/update_quantity/ - Изменить количество
+- POST /api/cart/remove_item/ - Удалить товар
+
 ## Разработка
 
-- Backend API доступен по адресу: http://localhost:8000/api/
-- Frontend доступен по адресу: http://localhost:3000/
+### Стиль кода
+- Python: PEP 8
+- JavaScript: ESLint + Prettier
+- React: Airbnb Style Guide
 
-## Документация
+### Коммиты
+Используйте conventional commits:
+- feat: новая функциональность
+- fix: исправление ошибок
+- docs: изменения в документации
+- style: форматирование кода
+- refactor: рефакторинг кода
+- test: добавление тестов
+- chore: обновление зависимостей
 
-Дополнительная документация по изображениям и медиафайлам находится в директории `docs/`. 
+## Лицензия
+
+MIT 
