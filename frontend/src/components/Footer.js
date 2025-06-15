@@ -41,6 +41,12 @@ const Footer = () => {
               <a href="#" className="text-muted fs-4"><i className="bi bi-instagram"></i></a>
               <a href="#" className="text-muted fs-4"><i className="bi bi-facebook"></i></a>
               <a href="#" className="text-muted fs-4"><i className="bi bi-telegram"></i></a>
+              <a href="/honey_project_dump.sql" className="text-muted fs-4" title="SQL-дамп" target="_blank" rel="noopener noreferrer">
+                <i className="bi bi-database"></i>
+              </a>
+              <a href="https://github.com/BetterBubble/paseka-project" className="text-muted fs-4" title="GitHub репозиторий" target="_blank" rel="noopener noreferrer">
+                <i className="bi bi-github"></i>
+              </a>
             </div>
           </div>
         </div>
