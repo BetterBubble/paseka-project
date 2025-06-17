@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth.models import User
-from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review, DeliveryMethod
+from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review, DeliveryMethod, Manufacturer
 import logging
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -8,16 +8,23 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ['id', 'name', 'slug', 'description']
 
+class ManufacturerSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Manufacturer
+        fields = ['id', 'name', 'description', 'website']
+
 class ProductSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
+    manufacturer = ManufacturerSerializer(read_only=True)
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
+    manual_url = serializers.SerializerMethodField()
     
     class Meta:
         model = Product
         fields = ['id', 'name', 'slug', 'description', 'price', 'discount_price', 
-                 'image', 'image_url', 'category', 'stock', 'available', 'created', 'updated',
+                 'image', 'image_url', 'manual', 'manual_url', 'category', 'manufacturer', 'stock', 'available', 'created', 'updated',
                  'average_rating', 'reviews_count']
     
     def get_average_rating(self, obj):
@@ -32,6 +39,14 @@ class ProductSerializer(serializers.ModelSerializer):
             if request:
                 return request.build_absolute_uri(obj.image.url)
             return obj.image.url
+        return None
+    
+    def get_manual_url(self, obj):
+        if obj.manual:
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(obj.manual.url)
+            return obj.manual.url
         return None
 
 class CartItemSerializer(serializers.ModelSerializer):

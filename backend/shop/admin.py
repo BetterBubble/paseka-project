@@ -22,8 +22,19 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Manufacturer)
 class ManufacturerAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
+    list_display = ("name", "website", "has_website")
+    search_fields = ("name", "description")
+    list_filter = ("name",)
+    
+    @admin.display(description="Есть сайт", boolean=True)
+    def has_website(self, obj):
+        return bool(obj.website)
+    
+    def get_readonly_fields(self, request, obj=None):
+        # Если есть сайт, покажем ссылку
+        if obj and obj.website:
+            return []
+        return []
 
 
 @admin.register(Region)
@@ -34,10 +45,31 @@ class RegionAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "price", "stock_quantity", "category", 'product_type', "region")
+    list_display = ("name", "price", "stock_quantity", "category", 'product_type', "region", "has_manual")
     list_filter = ("category", 'product_type', "region", "manufacturer")
     search_fields = ("name", "description")
     raw_id_fields = ("category", "region", "manufacturer")
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'slug', 'description', 'category', 'manufacturer', 'region', 'product_type')
+        }),
+        ('Цены и склад', {
+            'fields': ('price', 'discount_price', 'stock_quantity', 'available')
+        }),
+        ('Медиа файлы', {
+            'fields': ('image', 'manual'),
+            'description': 'Изображение товара и инструкция по использованию'
+        }),
+        ('Системные поля', {
+            'fields': ('created_at', 'updated'),
+            'classes': ('collapse',)
+        })
+    )
+    readonly_fields = ('created_at', 'updated')
+    
+    @admin.display(description="Есть инструкция", boolean=True)
+    def has_manual(self, obj):
+        return bool(obj.manual)
 
 
 class OrderItemInline(admin.TabularInline):

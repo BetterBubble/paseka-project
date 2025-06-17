@@ -2,7 +2,8 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .api_views import (
     CategoryViewSet, ProductViewSet, CartViewSet, 
-    OrderViewSet, ReviewViewSet, UserViewSet, DeliveryMethodViewSet
+    OrderViewSet, ReviewViewSet, UserViewSet, DeliveryMethodViewSet,
+    ManufacturerListAPIView
 )
 from . import views
 
@@ -17,6 +18,7 @@ router.register(r'delivery-methods', DeliveryMethodViewSet, basename='delivery-m
 
 urlpatterns = [
     path('', include(router.urls)),
+    path('manufacturers/', ManufacturerListAPIView.as_view(), name='manufacturer-list'),
     path('csrf-token/', views.get_csrf_token, name='api_csrf_token'),
     path('register/', views.register_user, name='api_register'),
     path('login/', views.login_user, name='api_login'),

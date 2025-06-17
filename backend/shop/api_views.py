@@ -4,12 +4,19 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review, DeliveryMethod
+from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review, DeliveryMethod, Manufacturer
 from .serializers import (
     CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer,
-    OrderSerializer, ReviewSerializer, UserSerializer, DeliveryMethodSerializer
+    OrderSerializer, ReviewSerializer, UserSerializer, DeliveryMethodSerializer,
+    ManufacturerSerializer
 )
 from .authentication import BearerTokenAuthentication
+from django.contrib.auth import authenticate
+from rest_framework import generics
+from rest_framework.pagination import PageNumberPagination
+import logging
+
+logger = logging.getLogger(__name__)
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
@@ -143,8 +150,6 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_201_CREATED
             )
         except Exception as e:
-            import logging
-            logger = logging.getLogger(__name__)
             logger.error(f"Error in OrderViewSet.create: {str(e)}", exc_info=True)
             return Response(
                 {'error': str(e)}, 
@@ -176,3 +181,12 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 class DeliveryMethodViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = DeliveryMethod.objects.all()
     serializer_class = DeliveryMethodSerializer 
+
+class CategoryListAPIView(generics.ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+
+class ManufacturerListAPIView(generics.ListAPIView):
+    queryset = Manufacturer.objects.all()
+    serializer_class = ManufacturerSerializer
+    pagination_class = PageNumberPagination 

@@ -41,6 +41,7 @@ class Category(models.Model):
 class Manufacturer(models.Model):
     name = models.CharField("Название производителя", max_length=100)
     description = models.TextField("Описание", blank=True)
+    website = models.URLField("Сайт производителя", blank=True, null=True, help_text="Официальный сайт производителя")
 
     class Meta:
         verbose_name = "Производитель"
@@ -69,6 +70,7 @@ class Product(models.Model):
     discount_price = models.DecimalField("Цена со скидкой", max_digits=10, decimal_places=2, blank=True, null=True)
     stock_quantity = models.PositiveIntegerField("Количество на складе", default=0)
     image = models.ImageField("Изображение", upload_to="products/", blank=True, null=True)
+    manual = models.FileField("Инструкция (PDF)", upload_to="manuals/", blank=True, null=True, help_text="Инструкция по использованию продукта")
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='products', verbose_name='Категория')
     manufacturer = models.ForeignKey(Manufacturer, on_delete=models.CASCADE, related_name='products', verbose_name='Производитель')
     region = models.ForeignKey(Region, on_delete=models.CASCADE, related_name='products', verbose_name='Регион')
