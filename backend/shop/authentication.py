@@ -3,9 +3,9 @@ from rest_framework.exceptions import AuthenticationFailed
 from django.contrib.auth.models import User
 from .models import AuthToken
 
-class TokenAuthentication(BaseAuthentication):
+class BearerTokenAuthentication(BaseAuthentication):
     """
-    Кастомная аутентификация на основе наших токенов
+    Кастомная аутентификация на основе Bearer-токенов
     """
     def authenticate(self, request):
         auth_header = request.META.get('HTTP_AUTHORIZATION')
@@ -14,18 +14,15 @@ class TokenAuthentication(BaseAuthentication):
             return None
         
         try:
-            token_value = auth_header.split(' ')[1]
-            token = AuthToken.objects.get(token=token_value)
+            token = auth_header.split(' ')[1]
+            auth_token = AuthToken.objects.get(token=token)
             
-            if not token.is_valid():
-                # Токен истек, удаляем его
-                token.delete()
-                raise AuthenticationFailed('Токен истек')
+            if not auth_token.is_valid():
+                raise AuthenticationFailed('Токен истёк')
             
-            return (token.user, token)
-            
+            return (auth_token.user, auth_token)
         except AuthToken.DoesNotExist:
-            raise AuthenticationFailed('Недействительный токен')
+            raise AuthenticationFailed('Неверный токен')
         except IndexError:
             raise AuthenticationFailed('Неверный формат токена')
     

@@ -4,12 +4,12 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from django.contrib.auth.models import User
 from django.shortcuts import get_object_or_404
-from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review
+from .models import Category, Product, Cart, CartItem, Order, OrderItem, Review, DeliveryMethod
 from .serializers import (
     CategorySerializer, ProductSerializer, CartSerializer, CartItemSerializer,
-    OrderSerializer, ReviewSerializer, UserSerializer
+    OrderSerializer, ReviewSerializer, UserSerializer, DeliveryMethodSerializer
 )
-from .authentication import TokenAuthentication
+from .authentication import BearerTokenAuthentication
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Category.objects.all()
@@ -43,7 +43,7 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
 class CartViewSet(viewsets.ModelViewSet):
     serializer_class = CartSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [BearerTokenAuthentication]
     
     def get_queryset(self):
         return Cart.objects.filter(user=self.request.user)
@@ -125,18 +125,36 @@ class CartViewSet(viewsets.ModelViewSet):
 class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [BearerTokenAuthentication]
     
     def get_queryset(self):
-        return Order.objects.filter(user=self.request.user)
+        return Order.objects.filter(user=self.request.user).order_by('-created_at')
     
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+    def create(self, request, *args, **kwargs):
+        """Переопределённый метод create для правильного создания заказа"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            order = serializer.save()
+            
+            # Возвращаем серилизованный ответ
+            return Response(
+                self.get_serializer(order).data, 
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error in OrderViewSet.create: {str(e)}", exc_info=True)
+            return Response(
+                {'error': str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [BearerTokenAuthentication]
     
     def get_queryset(self):
         product_id = self.request.query_params.get('product')
@@ -150,7 +168,11 @@ class ReviewViewSet(viewsets.ModelViewSet):
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [IsAuthenticated]
-    authentication_classes = [TokenAuthentication]
+    authentication_classes = [BearerTokenAuthentication]
     
     def get_queryset(self):
         return User.objects.filter(id=self.request.user.id) 
+
+class DeliveryMethodViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = DeliveryMethod.objects.all()
+    serializer_class = DeliveryMethodSerializer 

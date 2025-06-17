@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .api_views import (
     CategoryViewSet, ProductViewSet, CartViewSet, 
-    OrderViewSet, ReviewViewSet, UserViewSet
+    OrderViewSet, ReviewViewSet, UserViewSet, DeliveryMethodViewSet
 )
 from . import views
 
@@ -13,6 +13,7 @@ router.register(r'cart', CartViewSet, basename='cart')
 router.register(r'orders', OrderViewSet, basename='order')
 router.register(r'reviews', ReviewViewSet, basename='review')
 router.register(r'user', UserViewSet, basename='user')
+router.register(r'delivery-methods', DeliveryMethodViewSet, basename='delivery-method')
 
 urlpatterns = [
     path('', include(router.urls)),

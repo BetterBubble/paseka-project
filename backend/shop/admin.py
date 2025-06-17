@@ -3,6 +3,9 @@ from .models import Category, Manufacturer, Region, Product
 from .models import Order, OrderItem, Review, DeliveryMethod
 from .models import asexam
 from .models import Contact, Feedback
+import io
+from django.http import FileResponse
+from reportlab.pdfgen import canvas
 
 @admin.register(asexam)
 class AsexamAdmin(admin.ModelAdmin):
@@ -40,7 +43,55 @@ class ProductAdmin(admin.ModelAdmin):
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
-    readonly_fields = ("price_at_purchase",)
+    fields = ('product', 'quantity', 'price_at_purchase', 'total_cost')
+    readonly_fields = ('total_cost',)
+    
+    def get_readonly_fields(self, request, obj=None):
+        # Делаем price_at_purchase readonly только для существующих записей
+        readonly = list(self.readonly_fields)
+        if obj and obj.pk:
+            readonly.append('price_at_purchase')
+        return readonly
+    
+    @admin.display(description="Стоимость")
+    def total_cost(self, obj):
+        if obj.pk:
+            return f"{obj.get_cost()} ₽"
+        return "-"
+    
+    def save_model(self, request, obj, form, change):
+        # Автоматически устанавливаем price_at_purchase при создании
+        if not obj.pk and obj.product:
+            obj.price_at_purchase = obj.product.discount_price or obj.product.price
+        super().save_model(request, obj, form, change)
+
+
+@admin.action(description="Скачать выбранные заказы в PDF")
+def download_orders_pdf(modeladmin, request, queryset):
+    buffer = io.BytesIO()
+    p = canvas.Canvas(buffer)
+    y = 800
+    for order in queryset:
+        p.drawString(100, y, f"Заказ #{order.id} от {order.user}")
+        y -= 20
+        p.drawString(120, y, f"Дата: {order.created_at.strftime('%Y-%m-%d %H:%M')}")
+        y -= 20
+        p.drawString(120, y, f"Статус: {order.status}")
+        y -= 20
+        p.drawString(120, y, f"Сумма: {order.total_price}")
+        y -= 20
+        p.drawString(120, y, f"Товары:")
+        y -= 20
+        for item in order.orderitem_set.all():
+            p.drawString(140, y, f"- {item.product.name} x{item.quantity} ({item.price_at_purchase})")
+            y -= 15
+        y -= 20
+        if y < 100:
+            p.showPage()
+            y = 800
+    p.save()
+    buffer.seek(0)
+    return FileResponse(buffer, as_attachment=True, filename='orders.pdf')
 
 
 @admin.register(Order)
@@ -49,8 +100,18 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ("status", "delivery_method")
     date_hierarchy = "created_at"
     raw_id_fields = ("user",)
-    readonly_fields = ("created_at", "total_price")
+    readonly_fields = ("created_at",)
     inlines = [OrderItemInline]
+    actions = [download_orders_pdf]
+
+    def save_related(self, request, form, formsets, change):
+        """Пересчитываем total_price после сохранения связанных объектов"""
+        super().save_related(request, form, formsets, change)
+        # Пересчитываем общую сумму заказа
+        order = form.instance
+        total = sum(item.get_cost() for item in order.orderitem_set.all())
+        order.total_price = total
+        order.save()
 
     @admin.display(description="Пользователь")
     def user_name(self, obj):

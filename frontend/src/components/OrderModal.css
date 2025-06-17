@@ -1,0 +1,135 @@
+.order-modal-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeIn 0.3s;
+}
+
+.order-modal {
+  background: #fffbe9;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+  padding: 2.5rem 2rem 2rem 2rem;
+  min-width: 340px;
+  max-width: 95vw;
+  position: relative;
+  animation: zoomIn 0.3s;
+}
+
+.order-modal-title {
+  font-size: 2rem;
+  color: #b8860b;
+  margin-bottom: 0.5rem;
+  text-align: center;
+}
+
+.order-modal-info {
+  color: #7c6f57;
+  text-align: center;
+  margin-bottom: 1.2rem;
+}
+
+.order-modal-field {
+  margin-bottom: 1.1rem;
+}
+.order-modal-field label {
+  font-weight: 500;
+  color: #b8860b;
+  margin-bottom: 0.3rem;
+  display: block;
+}
+.order-modal-input {
+  width: 100%;
+  padding: 0.6rem 1rem;
+  border-radius: 8px;
+  border: 1px solid #e2c97a;
+  background: #fff;
+  font-size: 1rem;
+  transition: border 0.2s;
+}
+.order-modal-input:focus {
+  border: 1.5px solid #b8860b;
+  outline: none;
+}
+
+.order-modal-message {
+  text-align: center;
+  color: #b8860b;
+  font-size: 1.1rem;
+  margin-bottom: 1.2rem;
+  font-style: italic;
+}
+
+.order-modal-pay-btn {
+  width: 100%;
+  background: linear-gradient(90deg, #ffd700 0%, #ffb300 100%);
+  color: #fff;
+  font-weight: bold;
+  font-size: 1.1rem;
+  border: none;
+  border-radius: 8px;
+  padding: 0.8rem 0;
+  margin-bottom: 0.7rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 215, 0, 0.12);
+  transition: background 0.2s, transform 0.1s;
+}
+.order-modal-pay-btn:hover {
+  background: linear-gradient(90deg, #ffb300 0%, #ffd700 100%);
+  transform: translateY(-2px) scale(1.03);
+}
+
+.order-modal-close-btn {
+  width: 100%;
+  background: #fff;
+  color: #b8860b;
+  border: 1px solid #e2c97a;
+  border-radius: 8px;
+  padding: 0.7rem 0;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+}
+.order-modal-close-btn:hover {
+  background: #fffbe9;
+  color: #ffb300;
+}
+
+.order-modal-error {
+  color: #d32f2f;
+  background: #fff0f0;
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  margin-bottom: 0.7rem;
+  text-align: center;
+}
+
+.order-modal-success {
+  text-align: center;
+  padding: 2rem 1rem;
+}
+.order-modal-success-icon {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  animation: tada 1s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes zoomIn {
+  from { transform: scale(0.8); }
+  to { transform: scale(1); }
+}
+@keyframes tada {
+  0% { transform: scale(1); }
+  10%, 20% { transform: scale(0.9) rotate(-3deg); }
+  30%, 50%, 70%, 90% { transform: scale(1.1) rotate(3deg); }
+  40%, 60%, 80% { transform: scale(1.1) rotate(-3deg); }
+  100% { transform: scale(1) rotate(0); }
+} 

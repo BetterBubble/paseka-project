@@ -183,7 +183,7 @@ class Order(models.Model):
     delivery_address = models.CharField("Адрес доставки", max_length=255)
     delivery_method = models.ForeignKey(DeliveryMethod, verbose_name="Способ доставки", on_delete=models.SET_NULL, null=True)
     status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='pending')
-    total_price = models.DecimalField("Сумма", max_digits=10, decimal_places=2)
+    total_price = models.DecimalField("Сумма", max_digits=10, decimal_places=2, default=0)
     products = models.ManyToManyField(
         Product,
         through='OrderItem',
@@ -203,8 +203,8 @@ class Order(models.Model):
         return sum(item.get_cost() for item in self.orderitem_set.all())
 
     def save(self, *args, **kwargs):
-        if not self.total_price:
-            self.total_price = self.calculate_total()
+        # Не пытаемся вычислить total_price при создании заказа
+        # так как товары ещё не добавлены. Это будет сделано в сериализаторе.
         super().save(*args, **kwargs)
 
 
@@ -212,7 +212,7 @@ class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE)
     product = models.ForeignKey(Product, verbose_name="Товар", on_delete=models.CASCADE)
     quantity = models.PositiveIntegerField("Количество")
-    price_at_purchase = models.DecimalField("Цена на момент покупки", max_digits=10, decimal_places=2)
+    price_at_purchase = models.DecimalField("Цена на момент покупки", max_digits=10, decimal_places=2, null=True, blank=True)
 
     class Meta:
         verbose_name = "Товар в заказе"
@@ -220,6 +220,12 @@ class OrderItem(models.Model):
 
     def __str__(self):
         return f"{self.product} x{self.quantity}"
+
+    def save(self, *args, **kwargs):
+        # Автоматически устанавливаем цену при создании, если она не задана
+        if self.price_at_purchase is None and self.product:
+            self.price_at_purchase = self.product.discount_price or self.product.price
+        super().save(*args, **kwargs)
 
     def get_cost(self):
         """Получить стоимость позиции"""
