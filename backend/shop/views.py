@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Product
+from .models import Product, Category, Manufacturer
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.forms import UserCreationForm
@@ -17,11 +17,18 @@ from .models import Order, OrderItem
 from django.http import JsonResponse
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
-from django.views.decorators.http import require_http_methods
+from django.views.decorators.http import require_http_methods, require_POST
 from django.contrib.auth.models import User
 import json
 from django.contrib.auth import authenticate
 from .models import AuthToken
+from django.core.cache import cache
+from django.views.decorators.cache import cache_page
+from django.utils.decorators import method_decorator
+from rest_framework.generics import ListAPIView, RetrieveAPIView
+from rest_framework.permissions import AllowAny
+from .serializers import ProductSerializer, CategorySerializer, ManufacturerSerializer
+from django.utils import translation
 
 def asexam_view(request):
     exams = asexam.objects.select_related('user').filter(is_public=True)
@@ -472,3 +479,233 @@ def logout_user(request):
             'success': False,
             'error': 'Недействительный токен'
         }, status=401)
+
+# API Views для SPA
+class ProductListView(ListAPIView):
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+    
+    def get_queryset(self):
+        # Базовый queryset всегда из модели Product
+        queryset = Product.objects.available().select_related('category', 'manufacturer', 'region')
+        
+        # Фильтрация по категории
+        category = self.request.query_params.get('category')
+        if category:
+            queryset = queryset.filter(category__slug=category)
+        
+        # Поиск по названию
+        search = self.request.query_params.get('search')
+        if search:
+            queryset = queryset.filter(name__icontains=search)
+            
+        return queryset
+    
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+class ProductDetailView(RetrieveAPIView):
+    queryset = Product.objects.available().select_related('category', 'manufacturer', 'region')
+    serializer_class = ProductSerializer
+    permission_classes = [AllowAny]
+
+class CategoryListView(ListAPIView):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = [AllowAny]
+    
+    @method_decorator(cache_page(60 * 10))  # Кешируем на 10 минут
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+class ManufacturerListView(ListAPIView):
+    queryset = Manufacturer.objects.all()
+    serializer_class = ManufacturerSerializer
+    permission_classes = [AllowAny]
+    
+    @method_decorator(cache_page(60 * 15))  # Кешируем на 15 минут
+    def list(self, request, *args, **kwargs):
+        return super().list(request, *args, **kwargs)
+
+# API Views для корзины
+@csrf_exempt
+@require_http_methods(["GET"])
+def cart_view(request):
+    """API для получения содержимого корзины"""
+    cart = Cart(request)
+    cart_data = {
+        'items': [
+            {
+                'id': item['product'].id,
+                'name': item['product'].name,
+                'price': float(item['price']),
+                'quantity': item['quantity'],
+                'total_price': float(item['total_price']),
+                'image': item['product'].image.url if item['product'].image else None
+            }
+            for item in cart
+        ],
+        'total_price': float(cart.get_total_price()),
+        'total_items': len(cart)
+    }
+    return JsonResponse(cart_data)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def add_to_cart_api(request):
+    """API для добавления товара в корзину"""
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        quantity = data.get('quantity', 1)
+        
+        product = get_object_or_404(Product, id=product_id)
+        cart = Cart(request)
+        cart.add(product, quantity=quantity)
+        
+        # Простой ответ для проверки
+        return JsonResponse({
+            'success': True,
+            'message': f'Товар "{product.name}" добавлен в корзину',
+            'product_id': product.id,
+            'quantity': quantity
+        })
+    except json.JSONDecodeError as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'JSON decode error: {str(e)}'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Error: {str(e)}'
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def update_cart(request):
+    """API для обновления количества товара в корзине"""
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        quantity = data.get('quantity')
+        
+        product = get_object_or_404(Product, id=product_id)
+        cart = Cart(request)
+        cart.add(product, quantity=quantity, update_quantity=True)
+        
+        # Возвращаем актуальные данные корзины
+        cart_data = {
+            'items': [
+                {
+                    'id': item['product'].id,
+                    'name': item['product'].name,
+                    'price': float(item['price']),
+                    'quantity': item['quantity'],
+                    'total_price': float(item['total_price']),
+                    'image': item['product'].image.url if item['product'].image else None,
+                    'product': {
+                        'id': item['product'].id,
+                        'name': item['product'].name,
+                        'price': float(item['product'].price),
+                        'image': item['product'].image.url if item['product'].image else None
+                    }
+                }
+                for item in cart
+            ],
+            'total_price': float(cart.get_total_price()),
+            'total_items': len(cart),
+            'success': True,
+            'message': 'Корзина обновлена'
+        }
+        return JsonResponse(cart_data)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def remove_from_cart_api(request):
+    """API для удаления товара из корзины"""
+    try:
+        data = json.loads(request.body)
+        product_id = data.get('product_id')
+        
+        product = get_object_or_404(Product, id=product_id)
+        cart = Cart(request)
+        cart.remove(product)
+        
+        # Возвращаем актуальные данные корзины
+        cart_data = {
+            'items': [
+                {
+                    'id': item['product'].id,
+                    'name': item['product'].name,
+                    'price': float(item['price']),
+                    'quantity': item['quantity'],
+                    'total_price': float(item['total_price']),
+                    'image': item['product'].image.url if item['product'].image else None,
+                    'product': {
+                        'id': item['product'].id,
+                        'name': item['product'].name,
+                        'price': float(item['product'].price),
+                        'image': item['product'].image.url if item['product'].image else None
+                    }
+                }
+                for item in cart
+            ],
+            'total_price': float(cart.get_total_price()),
+            'total_items': len(cart),
+            'success': True,
+            'message': f'Товар "{product.name}" удален из корзины'
+        }
+        return JsonResponse(cart_data)
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        }, status=400)
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def clear_cart(request):
+    """API для очистки корзины"""
+    cart = Cart(request)
+    cart.clear()
+    cart_data = {
+        'items': [],
+        'total_price': 0,
+        'total_items': 0,
+        'success': True,
+        'message': 'Корзина очищена'
+    }
+    return JsonResponse(cart_data)
+
+@require_POST
+@csrf_exempt
+def set_language_api(request):
+    """API endpoint для переключения языка"""
+    try:
+        import json
+        data = json.loads(request.body)
+        language = data.get('language', 'ru')
+        
+        if language in ['ru', 'en']:
+            translation.activate(language)
+            request.session[translation.LANGUAGE_SESSION_KEY] = language
+            return JsonResponse({
+                'status': 'success', 
+                'language': language,
+                'message': f'Language changed to {language}'
+            })
+        return JsonResponse({
+            'status': 'error', 
+            'message': 'Invalid language'
+        }, status=400)
+    except Exception as e:
+        return JsonResponse({
+            'status': 'error',
+            'message': str(e)
+        }, status=500)

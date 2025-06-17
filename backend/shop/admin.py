@@ -10,6 +10,8 @@ from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 from reportlab.lib.pagesizes import letter, A4
 import os
+from decimal import Decimal
+from django.utils.html import format_html
 
 # Регистрируем шрифт для поддержки кириллицы
 try:
@@ -56,96 +58,90 @@ def transliterate(text):
         result += cyrillic_to_latin.get(char, char)
     return result
 
-@admin.register(asexam)
-class AsexamAdmin(admin.ModelAdmin):
-    list_display = ("title", "exam_date", "created_at", "is_public")
-    search_fields = ("title", "users__email")
-    list_filter = ("is_public", "created_at", "exam_date")
-    filter_horizontal = ("users",) 
-
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
-
-
-@admin.register(Manufacturer)
-class ManufacturerAdmin(admin.ModelAdmin):
-    list_display = ("name", "website", "has_website")
-    search_fields = ("name", "description")
-    list_filter = ("name",)
+# ДЕЙСТВИЯ АДМИНИСТРАТОРА
+@admin.action(description="Отметить товары как недоступные")
+def mark_products_unavailable(modeladmin, request, queryset):
+    """Дополнительное действие администратора - сделать товары недоступными"""
+    updated_count = queryset.update(available=False)
     
-    @admin.display(description="Есть сайт", boolean=True)
-    def has_website(self, obj):
-        return bool(obj.website)
+    # Очищаем кеш после изменения
+    from django.core.cache import cache
+    cache.clear()
     
-    def get_readonly_fields(self, request, obj=None):
-        # Если есть сайт, покажем ссылку
-        if obj and obj.website:
-            return []
-        return []
-
-
-@admin.register(Region)
-class RegionAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
-
-
-@admin.register(Product)
-class ProductAdmin(admin.ModelAdmin):
-    list_display = ("name", "price", "stock_quantity", "category", 'product_type', "region", "has_manual")
-    list_filter = ("category", 'product_type', "region", "manufacturer")
-    search_fields = ("name", "description")
-    raw_id_fields = ("category", "region", "manufacturer")
-    fieldsets = (
-        ('Основная информация', {
-            'fields': ('name', 'slug', 'description', 'category', 'manufacturer', 'region', 'product_type')
-        }),
-        ('Цены и склад', {
-            'fields': ('price', 'discount_price', 'stock_quantity', 'available')
-        }),
-        ('Медиа файлы', {
-            'fields': ('image', 'manual'),
-            'description': 'Изображение товара и инструкция по использованию'
-        }),
-        ('Системные поля', {
-            'fields': ('created_at', 'updated'),
-            'classes': ('collapse',)
-        })
+    modeladmin.message_user(
+        request,
+        f"Отмечено как недоступные: {updated_count} товаров. Кеш очищен."
     )
-    readonly_fields = ('created_at', 'updated')
-    
-    @admin.display(description="Есть инструкция", boolean=True)
-    def has_manual(self, obj):
-        return bool(obj.manual)
 
+@admin.action(description="Применить скидку 10 процентов")
+def apply_discount(modeladmin, request, queryset):
+    """Дополнительное действие администратора - применить скидку к товарам"""
+    updated_count = 0
+    for product in queryset:
+        if not product.discount_price:
+            # Используем Decimal для корректных вычислений с денежными суммами
+            discount_multiplier = Decimal('0.9')  # 10% скидка
+            product.discount_price = product.price * discount_multiplier
+            product.save()
+            updated_count += 1
+    
+    # Очищаем кеш после изменения
+    from django.core.cache import cache
+    cache.clear()
+    
+    modeladmin.message_user(
+        request,
+        f"Применена скидка 10% к {updated_count} товарам. Кеш очищен."
+    )
 
-class OrderItemInline(admin.TabularInline):
-    model = OrderItem
-    extra = 1
-    fields = ('product', 'quantity', 'price_at_purchase', 'total_cost')
-    readonly_fields = ('total_cost',)
+@admin.action(description="Убрать скидку с товаров")
+def remove_discount(modeladmin, request, queryset):
+    """Дополнительное действие администратора - убрать скидку с товаров"""
+    updated_count = 0
+    for product in queryset:
+        if product.discount_price:
+            product.discount_price = None
+            product.save()
+            updated_count += 1
     
-    def get_readonly_fields(self, request, obj=None):
-        # Делаем price_at_purchase readonly только для существующих записей
-        readonly = list(self.readonly_fields)
-        if obj and obj.pk:
-            readonly.append('price_at_purchase')
-        return readonly
+    # Очищаем кеш после изменения
+    from django.core.cache import cache
+    cache.clear()
     
-    @admin.display(description="Стоимость")
-    def total_cost(self, obj):
-        if obj.pk:
-            return f"{obj.get_cost()} ₽"
-        return "-"
-    
-    def save_model(self, request, obj, form, change):
-        # Автоматически устанавливаем price_at_purchase при создании
-        if not obj.pk and obj.product:
-            obj.price_at_purchase = obj.product.discount_price or obj.product.price
-        super().save_model(request, obj, form, change)
+    modeladmin.message_user(
+        request,
+        f"Скидка убрана с {updated_count} товаров. Кеш очищен."
+    )
 
+@admin.action(description="Очистить кеш товаров")
+def clear_product_cache(modeladmin, request, queryset):
+    """Дополнительное действие администратора - очистка кеша"""
+    from django.core.cache import cache
+    cache.delete('available_products')
+    modeladmin.message_user(request, "Кеш товаров очищен.")
+
+@admin.action(description="Экспорт в CSV")
+def export_to_csv(modeladmin, request, queryset):
+    """Дополнительное действие администратора - экспорт заказов в CSV"""
+    import csv
+    from django.http import HttpResponse
+    
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="orders.csv"'
+    
+    writer = csv.writer(response)
+    writer.writerow(['ID', 'Пользователь', 'Дата', 'Статус', 'Сумма'])
+    
+    for order in queryset:
+        writer.writerow([
+            order.id,
+            str(order.user),
+            order.created_at.strftime('%Y-%m-%d %H:%M'),
+            order.get_status_display(),
+            order.total_price
+        ])
+    
+    return response
 
 @admin.action(description="Скачать выбранные заказы в PDF")
 def download_orders_pdf(modeladmin, request, queryset):
@@ -211,6 +207,122 @@ def download_orders_pdf(modeladmin, request, queryset):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename='orders_report.pdf')
 
+# КЛАССЫ АДМИНИСТРАТОРА
+
+@admin.register(asexam)
+class AsexamAdmin(admin.ModelAdmin):
+    list_display = ("title", "exam_date", "created_at", "is_public")
+    search_fields = ("title", "users__email")
+    list_filter = ("is_public", "created_at", "exam_date")
+    filter_horizontal = ("users",) 
+
+@admin.register(Category)
+class CategoryAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+@admin.register(Manufacturer)
+class ManufacturerAdmin(admin.ModelAdmin):
+    list_display = ("name", "website", "has_website")
+    search_fields = ("name", "description")
+    list_filter = ("name",)
+    
+    @admin.display(description="Есть сайт", boolean=True)
+    def has_website(self, obj):
+        return bool(obj.website)
+    
+    def get_readonly_fields(self, request, obj=None):
+        # Если есть сайт, покажем ссылку
+        if obj and obj.website:
+            return []
+        return []
+
+
+@admin.register(Region)
+class RegionAdmin(admin.ModelAdmin):
+    list_display = ("name",)
+    search_fields = ("name",)
+
+
+@admin.register(Product)
+class ProductAdmin(admin.ModelAdmin):
+    list_display = ("name", "price", "discount_price_display", "discount_percent", "stock_quantity", "category", 'product_type', "region", "has_manual")
+    list_filter = ("category", 'product_type', "region", "manufacturer")
+    search_fields = ("name", "description")
+    raw_id_fields = ("category", "region", "manufacturer")
+    actions = [mark_products_unavailable, apply_discount, remove_discount, clear_product_cache]
+    fieldsets = (
+        ('Основная информация', {
+            'fields': ('name', 'slug', 'description', 'category', 'manufacturer', 'region', 'product_type')
+        }),
+        ('Цены и склад', {
+            'fields': ('price', 'discount_price', 'stock_quantity', 'available')
+        }),
+        ('Медиа файлы', {
+            'fields': ('image', 'manual'),
+            'description': 'Изображение товара и инструкция по использованию'
+        }),
+        ('Системные поля', {
+            'fields': ('created_at', 'updated'),
+            'classes': ('collapse',)
+        })
+    )
+    readonly_fields = ('created_at', 'updated')
+    
+    @admin.display(description="Есть инструкция", boolean=True)
+    def has_manual(self, obj):
+        return bool(obj.manual)
+    
+    @admin.display(description="Цена со скидкой")
+    def discount_price_display(self, obj):
+        if obj.discount_price and obj.discount_price < obj.price:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">{} ₽</span>',
+                obj.discount_price
+            )
+        elif obj.discount_price:
+            return format_html(
+                '<span style="color: orange;">{} ₽ (не активна)</span>',
+                obj.discount_price
+            )
+        return format_html(
+            '<span style="color: gray;">Нет скидки</span>'
+        )
+    
+    @admin.display(description="Скидка %")
+    def discount_percent(self, obj):
+        if obj.discount_price and obj.discount_price < obj.price:
+            percent = round(((obj.price - obj.discount_price) / obj.price) * 100)
+            return f"-{percent}%"
+        return "Нет"
+
+
+class OrderItemInline(admin.TabularInline):
+    model = OrderItem
+    extra = 1
+    fields = ('product', 'quantity', 'price_at_purchase', 'total_cost')
+    readonly_fields = ('total_cost',)
+    
+    def get_readonly_fields(self, request, obj=None):
+        # Делаем price_at_purchase readonly только для существующих записей
+        readonly = list(self.readonly_fields)
+        if obj and obj.pk:
+            readonly.append('price_at_purchase')
+        return readonly
+    
+    @admin.display(description="Стоимость")
+    def total_cost(self, obj):
+        if obj.pk:
+            return f"{obj.get_cost()} ₽"
+        return "-"
+    
+    def save_model(self, request, obj, form, change):
+        # Автоматически устанавливаем price_at_purchase при создании
+        if not obj.pk and obj.product:
+            obj.price_at_purchase = obj.product.discount_price or obj.product.price
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -220,7 +332,7 @@ class OrderAdmin(admin.ModelAdmin):
     raw_id_fields = ("user",)
     readonly_fields = ("created_at",)
     inlines = [OrderItemInline]
-    actions = [download_orders_pdf]
+    actions = [download_orders_pdf, export_to_csv]
 
     def save_related(self, request, form, formsets, change):
         """Пересчитываем total_price после сохранения связанных объектов"""

@@ -62,6 +62,12 @@ export const CartProvider = ({ children }) => {
 
     window.addEventListener('userLoggedIn', handleUserLoggedIn);
     
+    // Загружаем корзину сразу при монтировании, если пользователь уже авторизован
+    const token = localStorage.getItem('authToken');
+    if (token) {
+      loadCart();
+    }
+    
     return () => {
       window.removeEventListener('userLoggedIn', handleUserLoggedIn);
     };

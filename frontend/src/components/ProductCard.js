@@ -2,16 +2,18 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useTranslations } from './LanguageSwitcher';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const { user } = useAuth();
+  const { t, language } = useTranslations();
 
   // Проверка наличия данных о товаре
   if (!product) {
     return <div className="card h-100 product-card shadow-sm">
       <div className="card-body">
-        <p>Ошибка: товар не найден</p>
+        <p>{language === 'ru' ? 'Ошибка: товар не найден' : 'Error: product not found'}</p>
       </div>
     </div>;
   }
@@ -22,20 +24,23 @@ const ProductCard = ({ product }) => {
     e.stopPropagation();
     
     if (!user) {
-      alert('Для добавления товаров в корзину необходимо войти в систему');
+      alert(language === 'ru' 
+        ? 'Для добавления товаров в корзину необходимо войти в систему'
+        : 'You need to log in to add products to cart'
+      );
       return;
     }
 
     const result = await addToCart(product.id, 1);
     if (result.success) {
-      alert('Товар добавлен в корзину!');
+      alert(t.addedToCart);
     } else {
-      alert(result.error || 'Ошибка добавления в корзину');
+      alert(result.error || (language === 'ru' ? 'Ошибка добавления в корзину' : 'Error adding to cart'));
     }
   };
 
   const currentPrice = product.discount_price || product.price;
-  const hasDiscount = product.discount_price && product.discount_price < product.price;
+  const hasDiscount = product.discount_price && parseFloat(product.discount_price) < parseFloat(product.price);
 
   return (
     <div className="card h-100 product-card shadow-sm">
@@ -71,7 +76,7 @@ const ProductCard = ({ product }) => {
         {hasDiscount && (
           <div className="position-absolute top-0 start-0 m-2">
             <span className="badge bg-danger">
-              -{Math.round(((product.price - product.discount_price) / product.price) * 100)}%
+              -{Math.round(((parseFloat(product.price) - parseFloat(product.discount_price)) / parseFloat(product.price)) * 100)}%
             </span>
           </div>
         )}
@@ -135,7 +140,7 @@ const ProductCard = ({ product }) => {
               }}
             >
               <i className="bi bi-cart-plus me-2"></i>
-              {product.available && product.stock > 0 ? 'В корзину' : 'Нет в наличии'}
+              {product.available && product.stock > 0 ? t.addToCart : t.outOfStock}
             </button>
             <Link 
               to={`/product/${product.slug}`}
@@ -147,7 +152,7 @@ const ProductCard = ({ product }) => {
                 borderRadius: '0.75rem'
               }}
             >
-              Подробнее
+              {language === 'ru' ? 'Подробнее' : 'Details'}
             </Link>
           </div>
         </div>

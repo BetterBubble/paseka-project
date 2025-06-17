@@ -3,11 +3,13 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import AuthModals from './AuthModals';
+import LanguageSwitcher, { useTranslations } from './LanguageSwitcher';
 import api from '../services/api';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const { items } = useCart();
+  const { t, language } = useTranslations();
   const location = useLocation();
   const navigate = useNavigate();
   
@@ -113,7 +115,9 @@ const Header = () => {
                 </div>
                 <div className="brand-text">
                   <span className="brand-name">Пасека</span>
-                  <span className="brand-tagline">Натуральный мёд</span>
+                  <span className="brand-tagline">
+                    {language === 'ru' ? 'Натуральный мёд' : 'Natural Honey'}
+                  </span>
                 </div>
               </div>
             </Link>
@@ -124,7 +128,7 @@ const Header = () => {
                 to="/" 
                 className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`}
               >
-                <span className="nav-link-text">Главная</span>
+                <span className="nav-link-text">{t.home}</span>
                 <div className="nav-link-indicator"></div>
               </Link>
 
@@ -135,7 +139,7 @@ const Header = () => {
                 onMouseLeave={() => setShowCategoriesDropdown(false)}
               >
                 <button className="nav-link nav-dropdown-toggle">
-                  <span className="nav-link-text">Категории</span>
+                  <span className="nav-link-text">{t.categories}</span>
                   <div className="nav-link-indicator"></div>
                   <svg className="dropdown-arrow" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M7 10l5 5 5-5z"/>
@@ -150,7 +154,7 @@ const Header = () => {
                       onClick={() => setShowCategoriesDropdown(false)}
                     >
                       <span className="category-icon">🛒</span>
-                      <span className="category-name">Все товары</span>
+                      <span className="category-name">{t.allProducts}</span>
                     </Link>
                     {categories.map((category) => (
                       <Link
@@ -171,14 +175,14 @@ const Header = () => {
                 to="/about" 
                 className={`nav-link ${isActive('/about') ? 'nav-link--active' : ''}`}
               >
-                <span className="nav-link-text">О нас</span>
+                <span className="nav-link-text">{t.about}</span>
                 <div className="nav-link-indicator"></div>
               </Link>
               <Link 
                 to="/contact" 
                 className={`nav-link ${isActive('/contact') ? 'nav-link--active' : ''}`}
               >
-                <span className="nav-link-text">Контакты</span>
+                <span className="nav-link-text">{t.contact}</span>
                 <div className="nav-link-indicator"></div>
               </Link>
             </div>
@@ -195,8 +199,11 @@ const Header = () => {
                     <span className="cart-badge">{cartItemsCount}</span>
                   )}
                 </div>
-                <span className="action-text">Корзина</span>
+                <span className="action-text">{t.cart}</span>
               </Link>
+
+              {/* Переключатель языков */}
+              <LanguageSwitcher />
 
               {/* Аутентификация */}
               {user ? (
@@ -211,7 +218,9 @@ const Header = () => {
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
                     </svg>
-                    <span className="action-text">Выйти</span>
+                    <span className="action-text">
+                      {language === 'ru' ? 'Выйти' : 'Logout'}
+                    </span>
                   </button>
                 </div>
               ) : (
@@ -223,13 +232,13 @@ const Header = () => {
                     <svg viewBox="0 0 24 24" fill="currentColor">
                       <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
                     </svg>
-                    <span className="action-text">Войти</span>
+                    <span className="action-text">{t.login}</span>
                   </button>
                   <button 
                     onClick={() => handleAuthClick('register')} 
                     className="action-btn register-btn"
                   >
-                    <span className="action-text">Регистрация</span>
+                    <span className="action-text">{t.register}</span>
                   </button>
                 </div>
               )}

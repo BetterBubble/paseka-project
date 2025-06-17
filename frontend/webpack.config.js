@@ -41,17 +41,17 @@ module.exports = {
     proxy: [
       {
         context: ['/api'],
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
       {
         context: ['/media'],
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
       {
         context: ['/static'],
-        target: 'http://localhost:8000',
+        target: 'http://localhost:8001',
         changeOrigin: true,
       },
     ],

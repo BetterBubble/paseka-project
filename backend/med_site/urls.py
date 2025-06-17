@@ -3,7 +3,11 @@ from django.urls import path, include
 from shop.views import (
     home, product_detail, honey_products, products_with_image, 
     expensive_products, signup, contact_view, feedback_view, 
-    add_review, cart_detail, add_to_cart, remove_from_cart
+    add_review, cart_detail, add_to_cart, remove_from_cart,
+    ProductListView, ProductDetailView, CategoryListView, ManufacturerListView,
+    cart_view, update_cart, clear_cart, create_order, register_user as register_api, 
+    login_user as login_api, logout_user as logout_api,
+    current_user, set_language_api, remove_from_cart_api
 )
 from django.conf import settings
 from django.conf.urls.static import static
@@ -48,9 +52,27 @@ urlpatterns = [
     path('product/<int:product_id>/review/', add_review, name='add_review'),
     path('search/', views.search, name='search'),
 
-    # API URLs (основные для SPA)
+    # API URLs (основные для SPA) - ДОЛЖНО БЫТЬ ПЕРВЫМ!
     path('api/', include('shop.api_urls')),
-    path('api-auth/', include('rest_framework.urls')),
+    
+    # Дополнительные API endpoints
+    path('api/', include([
+        path('register/', register_api, name='api_register'),
+        path('login/', login_api, name='api_login'),
+        path('logout/', logout_api, name='api_logout'),
+        path('current-user/', current_user, name='api_current_user'),
+    ])),
+
+    # Совместимость для некоторых старых API views (сессионные, не для авторизованных пользователей)
+    path('api/session/', include([
+        path('cart/', cart_view, name='api_cart_session'),
+        path('cart/add/', views.add_to_cart_api, name='api_add_to_cart_session'),
+        path('cart/remove/', remove_from_cart_api, name='api_remove_from_cart_session'),
+        path('cart/update/', update_cart, name='api_update_cart_session'),
+        path('cart/clear/', clear_cart, name='api_clear_cart_session'),
+        path('orders/', create_order, name='api_create_order'),
+        path('set-language/', set_language_api, name='api_set_language'),
+    ])),
 
     # Старые Django views (для совместимости)
     path('django/', views.home, name='django_home'),

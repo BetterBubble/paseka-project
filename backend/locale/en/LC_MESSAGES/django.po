@@ -1,0 +1,121 @@
+# Translation file for English
+# 
+msgid ""
+msgstr ""
+"Content-Type: text/plain; charset=UTF-8\n"
+"Language: en\n"
+
+# Model translations
+msgid "Название экзамена"
+msgstr "Exam title"
+
+msgid "Дата создания записи"
+msgstr "Creation date"
+
+msgid "Дата проведения экзамена" 
+msgstr "Exam date"
+
+msgid "Изображение задания"
+msgstr "Task image"
+
+msgid "Пользователи, пишущие экзамен"
+msgstr "Users taking exam"
+
+msgid "Опубликовано"
+msgstr "Published"
+
+msgid "Экзамен"
+msgstr "Exam"
+
+msgid "Экзамены"
+msgstr "Exams"
+
+msgid "Название категории"
+msgstr "Category name"
+
+msgid "URL"
+msgstr "URL"
+
+msgid "Описание"
+msgstr "Description"
+
+msgid "Категория"
+msgstr "Category"
+
+msgid "Категории"
+msgstr "Categories"
+
+msgid "Название производителя"
+msgstr "Manufacturer name"
+
+msgid "Сайт производителя"
+msgstr "Manufacturer website"
+
+msgid "Официальный сайт производителя"
+msgstr "Official manufacturer website"
+
+msgid "Производитель"
+msgstr "Manufacturer"
+
+msgid "Производители"
+msgstr "Manufacturers"
+
+msgid "Регион"
+msgstr "Region"
+
+msgid "Регионы"
+msgstr "Regions"
+
+msgid "Название товара"
+msgstr "Product name"
+
+msgid "Цена"
+msgstr "Price"
+
+msgid "Цена со скидкой"
+msgstr "Discount price"
+
+msgid "Количество на складе"
+msgstr "Stock quantity"
+
+msgid "Изображение"
+msgstr "Image"
+
+msgid "Инструкция (PDF)"
+msgstr "Manual (PDF)"
+
+msgid "Инструкция по использованию продукта"
+msgstr "Product usage manual"
+
+msgid "Дата добавления"
+msgstr "Date added"
+
+msgid "Дата обновления"
+msgstr "Date updated"
+
+msgid "Доступен"
+msgstr "Available"
+
+msgid "Тип продукта"
+msgstr "Product type"
+
+msgid "Мёд"
+msgstr "Honey"
+
+msgid "Соты"
+msgstr "Honeycomb"
+
+msgid "Прополис"
+msgstr "Propolis"
+
+msgid "Пыльца"
+msgstr "Pollen"
+
+msgid "Воск"
+msgstr "Wax"
+
+msgid "Товар"
+msgstr "Product"
+
+msgid "Товары"
+msgstr "Products" 

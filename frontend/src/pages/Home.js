@@ -1,44 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import { useTranslations } from '../components/LanguageSwitcher';
 import api from '../services/api';
 import { getStaticImageUrl, STATIC_IMAGES } from '../utils/images';
 
 const Home = () => {
+  const { t, language } = useTranslations();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [refreshMessage, setRefreshMessage] = useState('');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
+  const loadProducts = useCallback(async () => {
     try {
-      const [productsResponse, categoriesResponse] = await Promise.all([
-        api.get('/products/'),
-        api.get('/categories/')
-      ]);
-      
-      setProducts(productsResponse.data.results || productsResponse.data);
-      setCategories(categoriesResponse.data.results || categoriesResponse.data);
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/products/?_=${timestamp}`);
+      setProducts(response.data.results || response.data);
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
     } finally {
       setLoading(false);
+    }
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/categories/?_=${timestamp}`);
+      setCategories(response.data.results || response.data);
+    } catch (error) {
+      console.error('Ошибка загрузки данных:', error);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadProducts();
+    loadCategories();
+  }, [loadProducts, loadCategories]);
+
+  const handleManualRefresh = async () => {
+    console.log('Ручное обновление данных...');
+    setLoading(true);
+    setRefreshMessage('');
+    
+    try {
+      await Promise.all([loadProducts(), loadCategories()]);
+      setRefreshMessage(language === 'ru' ? 'Данные обновлены!' : 'Data refreshed!');
+      
+      // Скрываем сообщение через 3 секунды
+      setTimeout(() => {
+        setRefreshMessage('');
+      }, 3000);
+    } catch (error) {
+      console.error('Ошибка при обновлении:', error);
+      setRefreshMessage(language === 'ru' ? 'Ошибка обновления' : 'Refresh error');
     }
   };
 
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
-      loadData();
+      loadProducts();
       return;
     }
 
     try {
-      const response = await api.get(`/products/?search=${encodeURIComponent(searchTerm)}`);
+      const timestamp = new Date().getTime();
+      const response = await api.get(`/products/?search=${encodeURIComponent(searchTerm)}&_=${timestamp}`);
       setProducts(response.data.results || response.data);
     } catch (error) {
       console.error('Ошибка поиска:', error);
@@ -50,7 +80,7 @@ const Home = () => {
       <div className="container py-5">
         <div className="text-center">
           <div className="spinner-border text-warning" role="status">
-            <span className="visually-hidden">Загрузка...</span>
+            <span className="visually-hidden">{t.loading}</span>
           </div>
         </div>
       </div>
@@ -73,8 +103,15 @@ const Home = () => {
         }}
       >
         <div className="container px-4 px-lg-5 text-center" style={{zIndex:2}}>
-          <h1 className="display-3 fw-bold mb-3 text-honey animate__animated animate__fadeInDown">Пасека Бабла</h1>
-          <p className="lead fw-normal text-honey mb-4 animate__animated animate__fadeInUp" style={{fontSize:'1.4rem'}}>Натуральный мёд и продукты пчеловодства с заботой о вас</p>
+          <h1 className="display-3 fw-bold mb-3 text-honey animate__animated animate__fadeInDown">
+            {language === 'ru' ? 'Пасека Bubble' : 'Bubble Apiary'}
+          </h1>
+          <p className="lead fw-normal text-honey mb-4 animate__animated animate__fadeInUp" style={{fontSize:'1.4rem'}}>
+            {language === 'ru' 
+              ? 'Натуральный мёд и продукты пчеловодства с заботой о вас' 
+              : 'Natural honey and beekeeping products with care for you'
+            }
+          </p>
           <Link to="/all-products" className="btn btn-honey btn-lg animate__animated animate__pulse animate__infinite" style={{
             backgroundColor: 'var(--honey-color)', 
             color: '#fff', 
@@ -84,7 +121,9 @@ const Home = () => {
             boxShadow: '0 4px 15px rgba(255, 140, 0, 0.3)',
             transform: 'scale(1.1)',
             transition: 'all 0.3s ease'
-          }}>Посмотреть товары</Link>
+          }}>
+            {language === 'ru' ? 'Посмотреть товары' : 'View Products'}
+          </Link>
         </div>
       </header>
 
@@ -92,7 +131,7 @@ const Home = () => {
       <section className="py-4 animate__animated animate__fadeInDown" style={{background:'#fffbe6'}}>
         <div className="container">
           <h2 className="text-center text-honey mb-0 animate__animated animate__fadeInDown">
-            Наши товары
+            {language === 'ru' ? 'Наши товары' : 'Our Products'}
           </h2>
         </div>
       </section>
@@ -106,15 +145,54 @@ const Home = () => {
                 <input
                   type="text"
                   className="form-control border-0 bg-transparent px-4 py-3"
-                  placeholder="Поиск товаров..."
+                  placeholder={t.search}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   style={{fontSize:'1.1rem'}}
                 />
-                <button type="submit" className="btn btn-honey px-4" style={{borderRadius:0}}>
-                  <i className="bi bi-search" style={{fontSize: '1.1rem'}}></i>
+                <button 
+                  type="submit" 
+                  className="btn btn-honey"
+                  style={{ minWidth: '100px' }}
+                >
+                  <i className="bi bi-search me-2"></i>
+                  {language === 'ru' ? 'Поиск' : 'Search'}
+                </button>
+                <button 
+                  type="button" 
+                  className="btn btn-outline-honey ms-2"
+                  onClick={handleManualRefresh}
+                  style={{ minWidth: '120px' }}
+                  title={language === 'ru' ? 'Обновить данные с сервера' : 'Refresh data from server'}
+                  disabled={loading}
+                >
+                  <i className="bi bi-arrow-clockwise me-2"></i>
+                  {loading ? 
+                    (language === 'ru' ? 'Загрузка...' : 'Loading...') :
+                    (language === 'ru' ? 'Обновить' : 'Refresh')
+                  }
                 </button>
               </form>
+              {refreshMessage && (
+                <div className="alert alert-success mt-3 text-center animate__animated animate__fadeIn" style={{
+                  background: 'linear-gradient(45deg, #28a745, #20c997)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '1rem'
+                }}>
+                  <i className="bi bi-check-circle me-2"></i>
+                  {refreshMessage}
+                </div>
+              )}
+              <div className="text-center mt-3">
+                <small className="text-muted">
+                  <i className="bi bi-info-circle me-1"></i>
+                  {language === 'ru' 
+                    ? 'Данные автоматически обновляются при перезагрузке страницы' 
+                    : 'Data is automatically updated when the page is reloaded'
+                  }
+                </small>
+              </div>
             </div>
           </div>
         </div>
@@ -125,21 +203,24 @@ const Home = () => {
         <div className="container">
           {searchTerm && (
             <h3 className="text-center text-honey mb-5 animate__animated animate__fadeInDown">
-              Результаты поиска: "{searchTerm}"
+              {language === 'ru' 
+                ? `Результаты поиска: "${searchTerm}"` 
+                : `Search results: "${searchTerm}"`
+              }
             </h3>
           )}
           {products.length === 0 ? (
             <div className="text-center animate__animated animate__fadeIn">
-              <p className="text-muted">Товары не найдены</p>
+              <p className="text-muted">{t.noProductsFound}</p>
               {searchTerm && (
                 <button 
                   className="btn btn-outline-honey"
                   onClick={() => {
                     setSearchTerm('');
-                    loadData();
+                    loadProducts();
                   }}
                 >
-                  Показать все товары
+                  {language === 'ru' ? 'Показать все товары' : 'Show all products'}
                 </button>
               )}
             </div>
@@ -160,29 +241,52 @@ const Home = () => {
         <div className="container">
           <div className="row text-center mb-4">
             <div className="col">
-              <h2 className="text-honey fw-bold mb-3" style={{fontSize:'2.1rem'}}>Почему выбирают нас?</h2>
+              <h2 className="text-honey fw-bold mb-3" style={{fontSize:'2.1rem'}}>
+                {language === 'ru' ? 'Почему выбирают нас?' : 'Why choose us?'}
+              </h2>
             </div>
           </div>
           <div className="row g-4 justify-content-center">
             <div className="col-md-4">
               <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
                 <div className="mb-3"><i className="bi bi-droplet-half text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">100% Натурально</h5>
-                <p className="text-muted mb-0">Только свежий и чистый мёд, без добавок и сахара.</p>
+                <h5 className="fw-bold mb-2">
+                  {language === 'ru' ? '100% Натурально' : '100% Natural'}
+                </h5>
+                <p className="text-muted mb-0">
+                  {language === 'ru' 
+                    ? 'Только свежий и чистый мёд, без добавок и сахара.' 
+                    : 'Only fresh and pure honey, without additives and sugar.'
+                  }
+                </p>
               </div>
             </div>
             <div className="col-md-4">
               <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
                 <div className="mb-3"><i className="bi bi-flower1 text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">Собственное производство</h5>
-                <p className="text-muted mb-0">Всё производится на нашей семейной пасеке с любовью.</p>
+                <h5 className="fw-bold mb-2">
+                  {language === 'ru' ? 'Собственное производство' : 'Own production'}
+                </h5>
+                <p className="text-muted mb-0">
+                  {language === 'ru' 
+                    ? 'Всё производится на нашей семейной пасеке с любовью.' 
+                    : 'Everything is produced on our family apiary with love.'
+                  }
+                </p>
               </div>
             </div>
             <div className="col-md-4">
               <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
                 <div className="mb-3"><i className="bi bi-shield-check text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">Гарантия качества</h5>
-                <p className="text-muted mb-0">Контроль качества на каждом этапе, сертификаты и честность.</p>
+                <h5 className="fw-bold mb-2">
+                  {language === 'ru' ? 'Гарантия качества' : 'Quality guarantee'}
+                </h5>
+                <p className="text-muted mb-0">
+                  {language === 'ru' 
+                    ? 'Контроль качества на каждом этапе, сертификаты и честность.' 
+                    : 'Quality control at every stage, certificates and honesty.'
+                  }
+                </p>
               </div>
             </div>
           </div>
@@ -194,8 +298,15 @@ const Home = () => {
         <div className="container">
           <div className="row mb-5">
             <div className="col text-center">
-              <h3 className="text-honey fw-bold mb-2" style={{fontSize:'2.2rem'}}>Наши Категории</h3>
-              <p className="text-muted" style={{fontSize:'1.1rem'}}>Выберите категорию продуктов пчеловодства</p>
+              <h3 className="text-honey fw-bold mb-2" style={{fontSize:'2.2rem'}}>
+                {language === 'ru' ? 'Наши Категории' : 'Our Categories'}
+              </h3>
+              <p className="text-muted" style={{fontSize:'1.1rem'}}>
+                {language === 'ru' 
+                  ? 'Выберите категорию продуктов пчеловодства' 
+                  : 'Choose a beekeeping product category'
+                }
+              </p>
             </div>
           </div>
           <div className="row g-4 justify-content-center">
@@ -238,7 +349,9 @@ const Home = () => {
                     </div>
                     <div className="category-text">
                       <span className="fw-bold text-honey d-block category-name" style={{fontSize:'1.2rem'}}>{cat.name}</span>
-                      <small className="text-muted category-description">Натуральные продукты</small>
+                      <small className="text-muted category-description">
+                        {language === 'ru' ? 'Натуральные продукты' : 'Natural products'}
+                      </small>
                     </div>
                   </Link>
                 </div>
@@ -256,7 +369,10 @@ const Home = () => {
                   </div>
                   <div className="col-auto">
                     <span className="fw-bold text-honey" style={{fontSize:'1.1rem'}}>
-                      Все продукты сертифицированы и проходят строгий контроль качества
+                      {language === 'ru' 
+                        ? 'Все продукты сертифицированы и проходят строгий контроль качества'
+                        : 'All products are certified and undergo strict quality control'
+                      }
                     </span>
                   </div>
                   <div className="col-auto">
