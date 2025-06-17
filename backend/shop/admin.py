@@ -6,6 +6,55 @@ from .models import Contact, Feedback
 import io
 from django.http import FileResponse
 from reportlab.pdfgen import canvas
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.lib.pagesizes import letter, A4
+import os
+
+# Регистрируем шрифт для поддержки кириллицы
+try:
+    # Пытаемся использовать системный шрифт
+    font_path = None
+    # Различные пути для разных ОС
+    possible_fonts = [
+        '/System/Library/Fonts/Arial.ttf',  # macOS
+        '/System/Library/Fonts/Helvetica.ttc',  # macOS
+        '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',  # Linux
+        'C:/Windows/Fonts/arial.ttf',  # Windows
+    ]
+    
+    for font in possible_fonts:
+        if os.path.exists(font):
+            font_path = font
+            break
+    
+    if font_path:
+        pdfmetrics.registerFont(TTFont('Arial-Unicode', font_path))
+        FONT_NAME = 'Arial-Unicode'
+    else:
+        # Если не можем найти TTF шрифт, используем встроенный шрифт с транслитерацией
+        FONT_NAME = 'Helvetica'
+except:
+    FONT_NAME = 'Helvetica'
+
+def transliterate(text):
+    """Простая транслитерация для случаев, когда нет подходящего шрифта"""
+    cyrillic_to_latin = {
+        'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo',
+        'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
+        'н': 'n', 'о': 'o', 'п': 'p', 'р': 'r', 'с': 's', 'т': 't', 'у': 'u',
+        'ф': 'f', 'х': 'h', 'ц': 'ts', 'ч': 'ch', 'ш': 'sh', 'щ': 'sch',
+        'ъ': '', 'ы': 'y', 'ь': '', 'э': 'e', 'ю': 'yu', 'я': 'ya',
+        'А': 'A', 'Б': 'B', 'В': 'V', 'Г': 'G', 'Д': 'D', 'Е': 'E', 'Ё': 'Yo',
+        'Ж': 'Zh', 'З': 'Z', 'И': 'I', 'Й': 'Y', 'К': 'K', 'Л': 'L', 'М': 'M',
+        'Н': 'N', 'О': 'O', 'П': 'P', 'Р': 'R', 'С': 'S', 'Т': 'T', 'У': 'U',
+        'Ф': 'F', 'Х': 'H', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Sch',
+        'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
+    }
+    result = ''
+    for char in text:
+        result += cyrillic_to_latin.get(char, char)
+    return result
 
 @admin.register(asexam)
 class AsexamAdmin(admin.ModelAdmin):
@@ -101,29 +150,66 @@ class OrderItemInline(admin.TabularInline):
 @admin.action(description="Скачать выбранные заказы в PDF")
 def download_orders_pdf(modeladmin, request, queryset):
     buffer = io.BytesIO()
-    p = canvas.Canvas(buffer)
-    y = 800
+    p = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    y = height - 50  # Начинаем сверху
+    
+    # Устанавливаем шрифт
+    p.setFont(FONT_NAME, 12)
+    
+    # Заголовок
+    title = "Отчет по заказам" if FONT_NAME == 'Arial-Unicode' else transliterate("Отчет по заказам")
+    p.drawString(50, y, title)
+    y -= 30
+    
     for order in queryset:
-        p.drawString(100, y, f"Заказ #{order.id} от {order.user}")
-        y -= 20
-        p.drawString(120, y, f"Дата: {order.created_at.strftime('%Y-%m-%d %H:%M')}")
-        y -= 20
-        p.drawString(120, y, f"Статус: {order.status}")
-        y -= 20
-        p.drawString(120, y, f"Сумма: {order.total_price}")
-        y -= 20
-        p.drawString(120, y, f"Товары:")
-        y -= 20
-        for item in order.orderitem_set.all():
-            p.drawString(140, y, f"- {item.product.name} x{item.quantity} ({item.price_at_purchase})")
-            y -= 15
-        y -= 20
-        if y < 100:
+        # Проверяем, помещается ли заказ на странице
+        if y < 150:
             p.showPage()
-            y = 800
+            p.setFont(FONT_NAME, 12)
+            y = height - 50
+        
+        # Информация о заказе
+        order_info = [
+            f"Заказ #{order.id} от {order.user}" if FONT_NAME == 'Arial-Unicode' 
+            else f"Order #{order.id} from {order.user}",
+            
+            f"Дата: {order.created_at.strftime('%Y-%m-%d %H:%M')}" if FONT_NAME == 'Arial-Unicode'
+            else f"Date: {order.created_at.strftime('%Y-%m-%d %H:%M')}",
+            
+            f"Статус: {order.get_status_display()}" if FONT_NAME == 'Arial-Unicode'
+            else f"Status: {transliterate(order.get_status_display())}",
+            
+            f"Сумма: {order.total_price} руб." if FONT_NAME == 'Arial-Unicode'
+            else f"Total: {order.total_price} RUB",
+            
+            f"Товары:" if FONT_NAME == 'Arial-Unicode' else "Products:"
+        ]
+        
+        for info in order_info:
+            p.drawString(50, y, info)
+            y -= 20
+        
+        # Товары в заказе
+        for item in order.orderitem_set.all():
+            if y < 50:
+                p.showPage()
+                p.setFont(FONT_NAME, 12)
+                y = height - 50
+                
+            if FONT_NAME == 'Arial-Unicode':
+                item_text = f"  - {item.product.name} x{item.quantity} ({item.price_at_purchase} руб.)"
+            else:
+                item_text = f"  - {transliterate(item.product.name)} x{item.quantity} ({item.price_at_purchase} RUB)"
+            
+            p.drawString(70, y, item_text)
+            y -= 15
+        
+        y -= 20  # Отступ между заказами
+    
     p.save()
     buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename='orders.pdf')
+    return FileResponse(buffer, as_attachment=True, filename='orders_report.pdf')
 
 
 @admin.register(Order)
