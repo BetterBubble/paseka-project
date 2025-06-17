@@ -84,7 +84,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, totalPrice }) => {
                 onChange={e => setFullName(e.target.value)}
                 required
                 placeholder="Введите ваше полное имя"
-                className="order-modal-input"
+                className="form-control"
               />
             </div>
             <div className="order-modal-field">
@@ -95,7 +95,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, totalPrice }) => {
                 onChange={e => setAddress(e.target.value)}
                 required
                 placeholder="Город, улица, дом, квартира"
-                className="order-modal-input"
+                className="form-control"
               />
             </div>
             <div className="order-modal-field">
@@ -104,7 +104,7 @@ const OrderModal = ({ isOpen, onClose, onSubmit, totalPrice }) => {
                 value={deliveryMethod}
                 onChange={e => setDeliveryMethod(e.target.value)}
                 required
-                className="order-modal-input"
+                className="form-control"
               >
                 <option value="" disabled>Выберите способ доставки</option>
                 {(() => {

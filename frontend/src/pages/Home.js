@@ -40,25 +40,6 @@ const Home = () => {
     loadCategories();
   }, [loadProducts, loadCategories]);
 
-  const handleManualRefresh = async () => {
-    console.log('Ручное обновление данных...');
-    setLoading(true);
-    setRefreshMessage('');
-    
-    try {
-      await Promise.all([loadProducts(), loadCategories()]);
-      setRefreshMessage(language === 'ru' ? 'Данные обновлены!' : 'Data refreshed!');
-      
-      // Скрываем сообщение через 3 секунды
-      setTimeout(() => {
-        setRefreshMessage('');
-      }, 3000);
-    } catch (error) {
-      console.error('Ошибка при обновлении:', error);
-      setRefreshMessage(language === 'ru' ? 'Ошибка обновления' : 'Refresh error');
-    }
-  };
-
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchTerm.trim()) {
@@ -157,20 +138,6 @@ const Home = () => {
                 >
                   <i className="bi bi-search me-2"></i>
                   {language === 'ru' ? 'Поиск' : 'Search'}
-                </button>
-                <button 
-                  type="button" 
-                  className="btn btn-outline-honey ms-2"
-                  onClick={handleManualRefresh}
-                  style={{ minWidth: '120px' }}
-                  title={language === 'ru' ? 'Обновить данные с сервера' : 'Refresh data from server'}
-                  disabled={loading}
-                >
-                  <i className="bi bi-arrow-clockwise me-2"></i>
-                  {loading ? 
-                    (language === 'ru' ? 'Загрузка...' : 'Loading...') :
-                    (language === 'ru' ? 'Обновить' : 'Refresh')
-                  }
                 </button>
               </form>
               {refreshMessage && (

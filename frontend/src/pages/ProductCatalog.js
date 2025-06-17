@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useTranslations } from '../components/LanguageSwitcher';
 import api from '../services/api';
 import './ProductCatalog.css';
+import ProductCard from '../components/ProductCard';
 
 const ProductCatalog = () => {
   const { t } = useTranslations(); // Подключаем переводы
@@ -82,49 +83,8 @@ const ProductCatalog = () => {
         {/* Товары */}
         <div className="products-grid">
           {filteredProducts.map(product => (
-            <div key={product.id} className="product-card">
-              <div className="product-image">
-                <img 
-                  src={product.image || '/api/placeholder/300/200'} 
-                  alt={product.name}
-                />
-                {product.discount_price && (
-                  <div className="discount-badge">
-                    -{Math.round(((product.price - product.discount_price) / product.price) * 100)}%
-                  </div>
-                )}
-              </div>
-              
-              <div className="product-info">
-                <h3 className="product-name">{product.name}</h3>
-                <p className="product-description">{product.description}</p>
-                
-                <div className="product-meta">
-                  <span className="product-category">{product.category}</span>
-                  <span className="product-availability">
-                    {product.available ? t.inStock : t.outOfStock}
-                  </span>
-                </div>
-
-                <div className="product-pricing">
-                  {product.discount_price ? (
-                    <>
-                      <span className="price-original">{product.price}₽</span>
-                      <span className="price-discount">{product.discount_price}₽</span>
-                    </>
-                  ) : (
-                    <span className="price-current">{product.price}₽</span>
-                  )}
-                </div>
-
-                <button 
-                  className="add-to-cart-btn"
-                  onClick={() => handleAddToCart(product)}
-                  disabled={!product.available}
-                >
-                  {t.addToCart}
-                </button>
-              </div>
+            <div key={product.id} className="col-lg-3 col-md-4 col-sm-6 animate__animated animate__fadeInUp">
+              <ProductCard product={product} />
             </div>
           ))}
         </div>
