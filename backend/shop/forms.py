@@ -1,6 +1,24 @@
 from django import forms
-from .models import Review, Contact, Feedback, Order
+from .models import Review, Contact, Feedback, Order, Product
 from django.core.validators import EmailValidator
+
+class MultipleFileInput(forms.ClearableFileInput):
+    """Кастомный виджет для загрузки нескольких файлов"""
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    """Кастомное поле для загрузки нескольких файлов"""
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
 
 class ContactForm(forms.ModelForm):
     def clean_email(self):
@@ -166,4 +184,97 @@ class OrderCreateForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Пожалуйста, укажите полный адрес (город, улица, дом)'
             )
-        return address 
+        return address
+
+
+class ProductImageUploadForm(forms.ModelForm):
+    """Форма для загрузки изображений товара с демонстрацией request.FILES"""
+    
+    # Кастомное поле для дополнительных изображений
+    additional_images = MultipleFileField(
+        label='Дополнительные изображения',
+        required=False,
+        help_text='Можно выбрать несколько изображений'
+    )
+    
+    # CharField с Textarea widget
+    upload_description = forms.CharField(
+        label='Описание загрузки',
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Опишите загружаемые изображения...'
+        }),
+        required=False
+    )
+    
+    class Meta:
+        model = Product
+        fields = ['name', 'image', 'manual']  # Убираем upload_description из полей модели
+        widgets = {
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Название товара'
+            }),
+            'image': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': 'image/*'
+            }),
+            'manual': forms.FileInput(attrs={
+                'class': 'form-control',
+                'accept': '.pdf,.doc,.docx'
+            })
+        }
+        labels = {
+            'name': 'Название товара',
+            'image': 'Основное изображение',
+            'manual': 'Инструкция (PDF/DOC)'
+        }
+        help_texts = {
+            'image': 'Загрузите основное изображение товара (JPG, PNG)',
+            'manual': 'Загрузите инструкцию по использованию товара'
+        }
+        error_messages = {
+            'name': {
+                'required': 'Название товара обязательно для заполнения',
+                'max_length': 'Название не должно превышать 200 символов'
+            },
+            'image': {
+                'invalid': 'Загрузите корректное изображение'
+            }
+        }
+    
+    class Media:
+        """Демонстрация class Media для подключения CSS и JS"""
+        css = {
+            'all': (
+                'admin/css/forms.css',
+                'shop/css/upload-form.css',
+            )
+        }
+        js = (
+            'admin/js/core.js',
+            'shop/js/image-preview.js',
+            'shop/js/file-validation.js',
+        )
+    
+    def clean_image(self):
+        """Валидация изображения"""
+        image = self.cleaned_data.get('image')
+        if image:
+            if image.size > 5 * 1024 * 1024:  # 5MB
+                raise forms.ValidationError('Размер изображения не должен превышать 5MB')
+            if not image.content_type.startswith('image/'):
+                raise forms.ValidationError('Файл должен быть изображением')
+        return image
+    
+    def clean_manual(self):
+        """Валидация файла инструкции"""
+        manual = self.cleaned_data.get('manual')
+        if manual:
+            allowed_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+            if manual.content_type not in allowed_types:
+                raise forms.ValidationError('Инструкция должна быть в формате PDF или DOC')
+            if manual.size > 10 * 1024 * 1024:  # 10MB
+                raise forms.ValidationError('Размер файла не должен превышать 10MB')
+        return manual 

@@ -8,38 +8,6 @@ from django.core.cache import cache
 import secrets
 from datetime import timedelta
 
-class asexam(models.Model):
-    title = models.CharField(max_length=255, verbose_name=_("Название экзамена"))
-    created_at = models.DateTimeField(auto_now_add=True, verbose_name=_("Дата создания записи"))
-    exam_date = models.DateField(verbose_name=_("Дата проведения экзамена"))
-    image = models.ImageField(upload_to='exam_images/', blank=True, null=True, verbose_name=_("Изображение задания"))
-    users = models.ManyToManyField(User, related_name="asexams", verbose_name=_("Пользователи, пишущие экзамен"))
-    is_public = models.BooleanField(default=False, verbose_name=_("Опубликовано"))
-    
-    class Meta:
-        verbose_name = _("Экзамен")
-        verbose_name_plural = _("Экзамены")
-
-    def __str__(self):
-        return self.title
-
-    @property
-    def available(self):
-        return self.is_public and self.exam_date >= timezone.now().date()
-
-class ProductManager(models.Manager):
-    def available(self):
-        return self.filter(available=True)
-    
-    def get_cached_products(self):
-        """Функциональный метод с использованием кеширования"""
-        cache_key = 'available_products'
-        products = cache.get(cache_key)
-        if not products:
-            products = list(self.available().select_related('category', 'manufacturer', 'region'))
-            cache.set(cache_key, products, timeout=300)  # 5 минут
-        return products
-
 class Category(models.Model):
     name = models.CharField(_("Название категории"), max_length=100)
     slug = models.SlugField(_("URL"), max_length=100, blank=True, null=True)
@@ -60,6 +28,26 @@ class Category(models.Model):
     def get_product_count(self):
         """Функциональный метод - подсчет товаров в категории"""
         return self.products.filter(available=True).count()
+
+    def get_absolute_url(self):
+        return reverse('category_detail', kwargs={'slug': self.slug})
+
+    def get_products_count(self):
+        """Функциональный метод - получение количества товаров в категории"""
+        return self.products.filter(available=True).count()
+
+class ProductManager(models.Manager):
+    def available(self):
+        return self.filter(available=True)
+    
+    def get_cached_products(self):
+        """Функциональный метод с использованием кеширования"""
+        cache_key = 'available_products'
+        products = cache.get(cache_key)
+        if not products:
+            products = list(self.available().select_related('category', 'manufacturer', 'region'))
+            cache.set(cache_key, products, timeout=300)  # 5 минут
+        return products
 
 class Manufacturer(models.Model):
     name = models.CharField(_("Название производителя"), max_length=100)

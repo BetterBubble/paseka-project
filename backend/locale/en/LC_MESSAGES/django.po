@@ -6,30 +6,6 @@ msgstr ""
 "Language: en\n"
 
 # Model translations
-msgid "Название экзамена"
-msgstr "Exam title"
-
-msgid "Дата создания записи"
-msgstr "Creation date"
-
-msgid "Дата проведения экзамена" 
-msgstr "Exam date"
-
-msgid "Изображение задания"
-msgstr "Task image"
-
-msgid "Пользователи, пишущие экзамен"
-msgstr "Users taking exam"
-
-msgid "Опубликовано"
-msgstr "Published"
-
-msgid "Экзамен"
-msgstr "Exam"
-
-msgid "Экзамены"
-msgstr "Exams"
-
 msgid "Название категории"
 msgstr "Category name"
 

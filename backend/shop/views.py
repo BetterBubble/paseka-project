@@ -5,16 +5,14 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import login, logout
 from shop.models import Product
-from .models import asexam
-from django.db.models import Avg
+from django.db.models import Avg, F, Q
 from .cart import Cart
 from django.contrib import messages
-from .forms import ContactForm, FeedbackForm, ReviewForm
+from .forms import ContactForm, FeedbackForm, ReviewForm, OrderCreateForm, ProductImageUploadForm
 from django.core.mail import send_mail
 from django.conf import settings
-from .forms import OrderCreateForm
 from .models import Order, OrderItem
-from django.http import JsonResponse
+from django.http import JsonResponse, Http404
 from django.middleware.csrf import get_token
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
@@ -29,47 +27,29 @@ from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
 from .serializers import ProductSerializer, CategorySerializer, ManufacturerSerializer
 from django.utils import translation
+from django.db import transaction
 
-def asexam_view(request):
-    exams = asexam.objects.select_related('user').filter(is_public=True)
-    return render(request, 'asexam.html', {
-        'exams': exams,
-        'full_name': 'Александр Шульга',
-        'group': '231-361'
-    })
+def home(request):
+    """Главная страница"""
+    # Оптимизированный запрос с select_related для уменьшения количества запросов к БД
+    latest_products = Product.objects.select_related('category', 'manufacturer').filter(available=True).order_by('-created_at')[:8]
+    
+    # Демонстрация работы с кешем
+    popular_categories = cache.get('popular_categories')
+    if not popular_categories:
+        popular_categories = Category.objects.filter(products__available=True).distinct()[:4]
+        cache.set('popular_categories', popular_categories, 300)  # 5 минут
+    
+    context = {
+        'latest_products': latest_products,
+        'popular_categories': popular_categories,
+    }
+    return render(request, 'shop/index.html', context)
 
 def avg_price(request):
     result = Product.objects.aggregate(Avg('price'))
     average_price = result['price__avg']
     return render(request, 'shop/avg_price.html', {'average': average_price})
-
-
-def home(request):
-    # Последние товары (3 последних по дате создания или ID)
-    latest_products = Product.objects.available().select_related('category', 'manufacturer', 'region').order_by('-id')[:3]
-
-    # Все товары с изображением, по убыванию цены
-    product_list = Product.objects.available().select_related('category', 'manufacturer', 'region')\
-        .exclude(image__isnull=True)\
-        .order_by('-price')
-
-    paginator = Paginator(product_list, 8)  # 8 товаров на страницу (2 ряда по 4)
-    page_number = request.GET.get('page')
-
-    try:
-        products = paginator.page(page_number)
-    except PageNotAnInteger:
-        products = paginator.page(1)
-    except EmptyPage:
-        products = paginator.page(paginator.num_pages)
-
-    page_obj = products
-
-    return render(request, 'shop/index.html', {
-        'products': products,
-        'latest_products': latest_products,
-        'page_obj': page_obj,
-    })
 
 def product_detail(request, pk):
     product = get_object_or_404(
@@ -80,19 +60,29 @@ def product_detail(request, pk):
     return render(request, 'shop/product_detail.html', {'product': product})
 
 def honey_products(request):
-    # 1. filter: только мед
-    honey = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type='honey')
+    # 1. filter: только мед + chaining filters
+    honey = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type='honey').filter(available=True).exclude(stock_quantity=0)
     return render(request, 'shop/honey_list.html', {'products': honey})
 
 def products_with_image(request):
-    # 2. exclude: исключаем товары без изображения
-    with_image = Product.objects.select_related('category', 'manufacturer', 'region').exclude(image='')
-    return render(request, 'shop/products_with_image.html', {'products': with_image})
+    # 2. exclude: исключаем товары без изображения + limiting QuerySets
+    products = Product.objects.select_related('category', 'manufacturer', 'region').exclude(image__isnull=True).exclude(image__exact='')[:10]  # Ограничиваем до 10
+    return render(request, 'shop/products_with_image.html', {'products': products})
 
 def expensive_products(request):
-    # 3. order_by: сортировка по цене (убывание)
-    expensive = Product.objects.select_related('category', 'manufacturer', 'region').order_by('-price')
-    return render(request, 'shop/expensive_products.html', {'products': expensive})
+    # 3. order_by: сортировка по цене (убывание) + values() и values_list()
+    expensive = Product.objects.select_related('category', 'manufacturer', 'region').filter(price__gte=5000).order_by('-price')[:5]
+    
+    # Демонстрация values() и values_list()
+    product_names = Product.objects.values_list('name', flat=True)[:10]  # Только названия
+    product_data = Product.objects.values('name', 'price', 'category__name')[:10]  # Словари с данными
+    
+    context = {
+        'products': expensive,
+        'product_names': product_names,
+        'product_data': product_data
+    }
+    return render(request, 'shop/expensive_products.html', context)
 
 def altai_products(request):
     products = Product.objects.select_related('category', 'manufacturer', 'region').filter(region__name__icontains='алтай')
@@ -709,3 +699,103 @@ def set_language_api(request):
             'status': 'error',
             'message': str(e)
         }, status=500)
+
+# Новые функции для демонстрации недостающих возможностей
+
+def bulk_operations_demo(request):
+    """Демонстрация bulk операций update() и delete()"""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        
+        if action == 'apply_discount':
+            # Массовое обновление - применяем скидку 10% к дорогим товарам
+            Product.objects.filter(price__gte=5000, discount_price__isnull=True).update(
+                discount_price=F('price') * 0.9
+            )
+            
+        elif action == 'remove_out_of_stock':
+            # Массовое удаление товаров без остатка (только для демонстрации)
+            # В реальности лучше делать available=False
+            count = Product.objects.filter(stock_quantity=0, available=False).count()
+            Product.objects.filter(stock_quantity=0, available=False).delete()
+            
+        elif action == 'increase_stock':
+            # F expressions - увеличиваем остаток на складе на 10
+            Product.objects.filter(available=True).update(
+                stock_quantity=F('stock_quantity') + 10
+            )
+            
+    return render(request, 'shop/bulk_operations.html')
+
+def f_expressions_demo(request):
+    """Демонстрация F expressions"""
+    # F expressions для вычислений на уровне БД
+    products_with_calculated_fields = Product.objects.annotate(
+        price_with_tax=F('price') * 1.2,  # Цена с НДС 20%
+        discount_amount=F('price') - F('discount_price'),  # Размер скидки
+        stock_value=F('price') * F('stock_quantity')  # Стоимость остатка
+    ).filter(available=True)
+    
+    return render(request, 'shop/f_expressions.html', {'products': products_with_calculated_fields})
+
+def product_detail_with_404(request, pk):
+    """Демонстрация Http404 exception"""
+    try:
+        product = Product.objects.select_related('category', 'manufacturer', 'region').get(pk=pk, available=True)
+    except Product.DoesNotExist:
+        raise Http404("Товар не найден или недоступен")
+    
+    # Chaining filters для связанных товаров
+    related_products = Product.objects.filter(
+        category=product.category
+    ).exclude(
+        pk=product.pk
+    ).filter(
+        available=True
+    )[:4]  # Limiting QuerySets
+    
+    context = {'product': product, 'related_products': related_products}
+    return render(request, 'shop/product_detail.html', context)
+
+def upload_product_images(request):
+    """Демонстрация File Uploads и request.FILES"""
+    if request.method == 'POST':
+        form = ProductImageUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # Основные файлы из формы
+            main_image = form.cleaned_data.get('image')
+            manual_file = form.cleaned_data.get('manual')
+            description = form.cleaned_data.get('upload_description')
+            
+            # Обработка дополнительных изображений из request.FILES
+            additional_images = request.FILES.getlist('additional_images')
+            
+            # Сохраняем товар
+            product = form.save(commit=False)
+            product.description = description or 'Товар загружен через форму'
+            product.category_id = 1  # Временно присваиваем первую категорию
+            product.manufacturer_id = 1  # Временно присваиваем первого производителя
+            product.region_id = 1  # Временно присваиваем первый регион
+            product.price = 1000  # Временная цена
+            product.save()
+            
+            # Обработка дополнительных изображений
+            upload_info = {
+                'product_id': product.id,
+                'main_image': main_image.name if main_image else None,
+                'manual': manual_file.name if manual_file else None,
+                'additional_count': len(additional_images),
+                'additional_files': [img.name for img in additional_images]
+            }
+            
+            # В реальном проекте здесь бы сохранялись дополнительные изображения
+            # в отдельную модель или обрабатывались другим способом
+            
+            messages.success(request, f'Товар "{product.name}" успешно создан! Загружено файлов: {len(additional_images) + (1 if main_image else 0) + (1 if manual_file else 0)}')
+            return redirect('product_detail', pk=product.id)
+        else:
+            messages.error(request, 'Ошибка при загрузке файлов. Проверьте форму.')
+    else:
+        form = ProductImageUploadForm()
+    
+    return render(request, 'shop/upload_form.html', {'form': form})

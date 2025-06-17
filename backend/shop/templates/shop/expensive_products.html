@@ -2,13 +2,98 @@
 
 {% block content %}
 <div class="container mt-4">
-  <h2 class="mb-3">Дорогие товары (от 7000 ₽)</h2>
-  <ul>
-    {% for product in products %}
-      <li>{{ product.name }} — {{ product.price }} ₽</li>
-    {% empty %}
-      <li>Нет дорогих товаров.</li>
-    {% endfor %}
-  </ul>
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h3>Демонстрация values() и values_list()</h3>
+                    <small>Ограничение полей в QuerySet</small>
+                </div>
+                <div class="card-body">
+                    <!-- Дорогие товары (полные объекты) -->
+                    <h4>Дорогие товары (от 5000 ₽) - Limiting QuerySets [:5]</h4>
+                    <div class="table-responsive mb-4">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Цена</th>
+                                    <th>Категория</th>
+                                    <th>Производитель</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.price }} ₽</td>
+                                    <td>{{ product.category.name }}</td>
+                                    <td>{{ product.manufacturer.name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="4" class="text-center">Нет дорогих товаров</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <!-- Демонстрация values_list -->
+                    <h4>values_list('name', flat=True) - только названия товаров</h4>
+                    <div class="alert alert-info">
+                        <strong>Код:</strong> <code>Product.objects.values_list('name', flat=True)[:10]</code>
+                    </div>
+                    <ul class="list-group mb-4">
+                        {% for name in product_names %}
+                        <li class="list-group-item">{{ name }}</li>
+                        {% empty %}
+                        <li class="list-group-item">Нет товаров</li>
+                        {% endfor %}
+                    </ul>
+                    
+                    <!-- Демонстрация values -->
+                    <h4>values('name', 'price', 'category__name') - словари с данными</h4>
+                    <div class="alert alert-info">
+                        <strong>Код:</strong> <code>Product.objects.values('name', 'price', 'category__name')[:10]</code>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Название</th>
+                                    <th>Цена</th>
+                                    <th>Категория</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in product_data %}
+                                <tr>
+                                    <td>{{ item.name }}</td>
+                                    <td>{{ item.price }} ₽</td>
+                                    <td>{{ item.category__name }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" class="text-center">Нет данных</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <h5>Преимущества values() и values_list():</h5>
+                        <ul>
+                            <li>Меньше данных передается из БД</li>
+                            <li>Экономия памяти</li>
+                            <li>Быстрее, когда нужны только определенные поля</li>
+                            <li>values_list с flat=True возвращает плоский список значений</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 {% endblock %}

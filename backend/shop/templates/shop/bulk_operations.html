@@ -1,0 +1,50 @@
+{% extends 'shop/base.html' %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h3>Демонстрация Bulk операций Django</h3>
+                </div>
+                <div class="card-body">
+                    <p>Эта страница демонстрирует использование bulk операций в Django:</p>
+                    
+                    <ul class="list-group mb-4">
+                        <li class="list-group-item">
+                            <strong>update()</strong> - массовое обновление записей
+                        </li>
+                        <li class="list-group-item">
+                            <strong>delete()</strong> - массовое удаление записей
+                        </li>
+                        <li class="list-group-item">
+                            <strong>F expressions</strong> - вычисления на уровне БД
+                        </li>
+                    </ul>
+                    
+                    <div class="alert alert-warning">
+                        <strong>Внимание!</strong> Эти операции изменяют данные в базе данных.
+                        В production среде используйте с осторожностью.
+                    </div>
+                    
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="btn-group-vertical d-grid gap-2">
+                            <button type="submit" name="action" value="apply_discount" class="btn btn-primary">
+                                Применить скидку 10% к дорогим товарам (update + F)
+                            </button>
+                            <button type="submit" name="action" value="increase_stock" class="btn btn-success">
+                                Увеличить остаток всех товаров на 10 (update + F)
+                            </button>
+                            <button type="submit" name="action" value="remove_out_of_stock" class="btn btn-danger">
+                                Удалить товары без остатка (delete)
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

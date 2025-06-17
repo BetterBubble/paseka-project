@@ -1,0 +1,181 @@
+{% extends 'shop/base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-honey text-white">
+                    <h3 class="mb-0">
+                        <i class="bi bi-cloud-upload"></i>
+                        Загрузка изображений товара
+                    </h3>
+                    <small>Демонстрация File Uploads и Django форм</small>
+                </div>
+                <div class="card-body">
+                    <!-- Демонстрация {{ field.errors }} {{ field.label_tag }} {{ field }} -->
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        
+                        <!-- Обработка общих ошибок формы -->
+                        {% if form.non_field_errors %}
+                            <div class="alert alert-danger">
+                                {{ form.non_field_errors }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Поле название товара -->
+                        <div class="mb-3">
+                            {{ form.name.label_tag }}
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.name.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.name.help_text %}
+                                <small class="form-text text-muted">{{ form.name.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Поле основное изображение -->
+                        <div class="mb-3">
+                            {{ form.image.label_tag }}
+                            {{ form.image }}
+                            {% if form.image.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.image.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.image.help_text %}
+                                <small class="form-text text-muted">{{ form.image.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Поле инструкция -->
+                        <div class="mb-3">
+                            {{ form.manual.label_tag }}
+                            {{ form.manual }}
+                            {% if form.manual.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.manual.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.manual.help_text %}
+                                <small class="form-text text-muted">{{ form.manual.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Поле дополнительные изображения -->
+                        <div class="mb-3">
+                            {{ form.additional_images.label_tag }}
+                            {{ form.additional_images }}
+                            {% if form.additional_images.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.additional_images.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.additional_images.help_text %}
+                                <small class="form-text text-muted">{{ form.additional_images.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Поле описание загрузки (CharField с Textarea widget) -->
+                        <div class="mb-3">
+                            {{ form.upload_description.label_tag }}
+                            {{ form.upload_description }}
+                            {% if form.upload_description.errors %}
+                                <div class="text-danger mt-1">
+                                    {{ form.upload_description.errors }}
+                                </div>
+                            {% endif %}
+                            {% if form.upload_description.help_text %}
+                                <small class="form-text text-muted">{{ form.upload_description.help_text }}</small>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Кнопки -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'index' %}" class="btn btn-secondary me-md-2">Отмена</a>
+                            <button type="submit" class="btn btn-honey">
+                                <i class="bi bi-upload"></i>
+                                Загрузить товар
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Информация о возможностях формы -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5>Демонстрируемые возможности Django</h5>
+                </div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        <li class="list-group-item">
+                            <strong>{{ field.errors }}</strong> - отображение ошибок поля
+                        </li>
+                        <li class="list-group-item">
+                            <strong>{{ field.label_tag }}</strong> - автоматическая генерация label
+                        </li>
+                        <li class="list-group-item">
+                            <strong>{{ field }}</strong> - рендеринг поля формы
+                        </li>
+                        <li class="list-group-item">
+                            <strong>request.FILES</strong> - обработка загруженных файлов
+                        </li>
+                        <li class="list-group-item">
+                            <strong>forms.CharField(widget=forms.Textarea)</strong> - кастомный виджет
+                        </li>
+                        <li class="list-group-item">
+                            <strong>class Media</strong> - подключение CSS и JS к форме
+                        </li>
+                        <li class="list-group-item">
+                            <strong>fields, exclude, widgets, labels, help_texts, error_messages</strong> - Meta опции
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<!-- CSS из class Media формы будет подключен автоматически -->
+<style>
+    .bg-honey {
+        background-color: #ffc107 !important;
+    }
+    .btn-honey {
+        background-color: #ffc107;
+        border-color: #ffc107;
+        color: #000;
+    }
+    .btn-honey:hover {
+        background-color: #e0a800;
+        border-color: #d39e00;
+        color: #000;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<!-- JavaScript из class Media формы будет подключен автоматически -->
+<script>
+    // Превью изображений
+    document.addEventListener('DOMContentLoaded', function() {
+        const imageInput = document.querySelector('input[type="file"][accept*="image"]');
+        if (imageInput) {
+            imageInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    console.log('Выбрано изображение:', file.name, 'Размер:', file.size);
+                }
+            });
+        }
+    });
+</script>
+{% endblock %} 

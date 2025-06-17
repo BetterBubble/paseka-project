@@ -1,7 +1,6 @@
 from django.contrib import admin
 from .models import Category, Manufacturer, Region, Product
 from .models import Order, OrderItem, Review, DeliveryMethod
-from .models import asexam
 from .models import Contact, Feedback
 import io
 from django.http import FileResponse
@@ -209,18 +208,10 @@ def download_orders_pdf(modeladmin, request, queryset):
 
 # КЛАССЫ АДМИНИСТРАТОРА
 
-@admin.register(asexam)
-class AsexamAdmin(admin.ModelAdmin):
-    list_display = ("title", "exam_date", "created_at", "is_public")
-    search_fields = ("title", "users__email")
-    list_filter = ("is_public", "created_at", "exam_date")
-    filter_horizontal = ("users",) 
-
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("name",)
-    search_fields = ("name",)
-
+    list_display = ['name', 'description']
+    search_fields = ['name']
 
 @admin.register(Manufacturer)
 class ManufacturerAdmin(admin.ModelAdmin):
@@ -238,12 +229,10 @@ class ManufacturerAdmin(admin.ModelAdmin):
             return []
         return []
 
-
 @admin.register(Region)
 class RegionAdmin(admin.ModelAdmin):
     list_display = ("name",)
     search_fields = ("name",)
-
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
@@ -297,7 +286,6 @@ class ProductAdmin(admin.ModelAdmin):
             return f"-{percent}%"
         return "Нет"
 
-
 class OrderItemInline(admin.TabularInline):
     model = OrderItem
     extra = 1
@@ -322,7 +310,6 @@ class OrderItemInline(admin.TabularInline):
         if not obj.pk and obj.product:
             obj.price_at_purchase = obj.product.discount_price or obj.product.price
         super().save_model(request, obj, form, change)
-
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
@@ -351,11 +338,9 @@ class OrderAdmin(admin.ModelAdmin):
     def item_count(self, obj):
         return obj.orderitem_set.count()
 
-
 @admin.register(DeliveryMethod)
 class DeliveryMethodAdmin(admin.ModelAdmin):
     list_display = ("name", "cost_policy")
-
 
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
@@ -369,7 +354,6 @@ class ReviewAdmin(admin.ModelAdmin):
 
     list_display = ("product", "user", "rating", "short_comment", "created_at")
 
-
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
     list_display = ('subject', 'name', 'email', 'created_at', 'is_processed')
@@ -377,7 +361,6 @@ class ContactAdmin(admin.ModelAdmin):
     search_fields = ('name', 'email', 'subject', 'message')
     date_hierarchy = 'created_at'
     ordering = ('-created_at',)
-
 
 @admin.register(Feedback)
 class FeedbackAdmin(admin.ModelAdmin):

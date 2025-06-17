@@ -32,16 +32,13 @@ urlpatterns = [
     # Важно: подключаем все стандартные маршруты Django auth (в т.ч. password_change, password_reset и др.)
     path('accounts/', include('django.contrib.auth.urls')),
 
-    #контрольная (не относится к готовму сайту)
-    path('asexam/', views.asexam_view, name='asexam'),
-    
-    #Раздел О нас
+    # Раздел О нас
     path('about/', views.about, name='about'),
 
-    #Категории хедер
+    # Категории хедер
     path('products/type/<str:type>/', views.products_by_type, name='product_type'),
 
-    #Корзина
+    # Корзина
     path('cart/', cart_detail, name='cart_detail'),
     path('cart/add/<int:product_id>/', add_to_cart, name='add_to_cart'),
     path('cart/remove/<int:product_id>/', remove_from_cart, name='remove_from_cart'),
@@ -78,7 +75,6 @@ urlpatterns = [
     path('django/', views.home, name='django_home'),
     path('django/about/', views.about, name='django_about'),
     path('django/contact/', views.contact_view, name='django_contact'),
-    path('django/asexam/', views.asexam_view, name='django_asexam'),
 ]
 
 # Медиафайлы и статические файлы должны работать всегда

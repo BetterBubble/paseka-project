@@ -1,0 +1,66 @@
+{% extends 'shop/base.html' %}
+{% load custom_tags %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h3>Демонстрация F expressions</h3>
+                    <small>Вычисления на уровне базы данных</small>
+                </div>
+                <div class="card-body">
+                    <p>F expressions позволяют выполнять вычисления на уровне базы данных, что более эффективно:</p>
+                    
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Товар</th>
+                                    <th>Цена</th>
+                                    <th>Цена с НДС 20%</th>
+                                    <th>Размер скидки</th>
+                                    <th>Остаток</th>
+                                    <th>Стоимость остатка</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for product in products %}
+                                <tr>
+                                    <td>{{ product.name }}</td>
+                                    <td>{{ product.price }} ₽</td>
+                                    <td>{{ product.price_with_tax|floatformat:2 }} ₽</td>
+                                    <td>
+                                        {% if product.discount_amount %}
+                                            {{ product.discount_amount|floatformat:2 }} ₽
+                                        {% else %}
+                                            -
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ product.stock_quantity }}</td>
+                                    <td>{{ product.stock_value|floatformat:2 }} ₽</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="6" class="text-center">Нет товаров</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <h5>Используемые F expressions:</h5>
+                        <ul>
+                            <li><code>F('price') * 1.2</code> - цена с НДС</li>
+                            <li><code>F('price') - F('discount_price')</code> - размер скидки</li>
+                            <li><code>F('price') * F('stock_quantity')</code> - стоимость остатка</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
