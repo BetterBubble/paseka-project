@@ -102,12 +102,12 @@ const Cart = () => {
   if (!user) {
     return (
       <div className="cart-honey-bg">
-        <div className="cart-modern-container">
-          <div className="cart-modern-empty text-center animate__animated animate__fadeIn">
-            <h2>Для просмотра корзины необходимо войти в систему</h2>
-            <Link to="/" className="btn btn-honey mt-3">
-              На главную
-            </Link>
+      <div className="cart-modern-container">
+        <div className="cart-modern-empty text-center animate__animated animate__fadeIn">
+          <h2>Для просмотра корзины необходимо войти в систему</h2>
+          <Link to="/" className="btn btn-honey mt-3">
+            На главную
+          </Link>
           </div>
         </div>
       </div>
@@ -117,14 +117,14 @@ const Cart = () => {
   if (loading) {
     return (
       <div className="cart-honey-bg">
-        <div className="cart-modern-container">
-          <div className="cart-modern-loading text-center animate__animated animate__fadeIn">
-            <div className="honey-spinner">
-              <div className="honey-drop"></div>
-              <div className="honey-drop"></div>
-              <div className="honey-drop"></div>
-            </div>
-            <p className="loading-text">Загрузка корзины...</p>
+      <div className="cart-modern-container">
+        <div className="cart-modern-loading text-center animate__animated animate__fadeIn">
+          <div className="honey-spinner">
+            <div className="honey-drop"></div>
+            <div className="honey-drop"></div>
+            <div className="honey-drop"></div>
+          </div>
+          <p className="loading-text">Загрузка корзины...</p>
           </div>
         </div>
       </div>
@@ -134,13 +134,13 @@ const Cart = () => {
   if (items.length === 0) {
     return (
       <div className="cart-honey-bg">
-        <div className="cart-modern-container">
-          <div className="cart-modern-empty text-center animate__animated animate__fadeIn">
-            <h2 className="text-honey mb-4">Ваша корзина пуста</h2>
-            <p className="text-muted mb-4">Добавьте товары в корзину, чтобы продолжить покупки</p>
-            <Link to="/" className="btn btn-honey">
-              Перейти к покупкам
-            </Link>
+      <div className="cart-modern-container">
+        <div className="cart-modern-empty text-center animate__animated animate__fadeIn">
+          <h2 className="text-honey mb-4">Ваша корзина пуста</h2>
+          <p className="text-muted mb-4">Добавьте товары в корзину, чтобы продолжить покупки</p>
+          <Link to="/" className="btn btn-honey">
+            Перейти к покупкам
+          </Link>
           </div>
         </div>
       </div>

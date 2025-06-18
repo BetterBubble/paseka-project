@@ -26,30 +26,18 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/current-user/', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.user) {
-          setUser(data.user);
-          // Уведомляем о том, что пользователь вошел в систему
-          window.dispatchEvent(new CustomEvent('userLoggedIn'));
-        } else {
-          setUser(null);
-          setToken(null);
-          localStorage.removeItem('authToken');
-        }
+      const response = await api.get('/current-user/');
+      if (response.data.success && response.data.user) {
+        setUser(response.data.user);
+        // Уведомляем о том, что пользователь вошел в систему
+        window.dispatchEvent(new CustomEvent('userLoggedIn'));
       } else {
         setUser(null);
         setToken(null);
         localStorage.removeItem('authToken');
       }
     } catch (error) {
+      console.error('Error checking auth:', error);
       setUser(null);
       setToken(null);
       localStorage.removeItem('authToken');
@@ -61,20 +49,14 @@ export const AuthProvider = ({ children }) => {
   // Авторизация пользователя
   const login = async (username, password) => {
     try {
-      const response = await fetch('http://localhost:8000/api/login/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          password
-        }),
+      const response = await api.post('/login/', {
+        username,
+        password
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok && data.success) {
+      if (data.success) {
         // Сохраняем токен и данные пользователя
         const authToken = data.token;
         setToken(authToken);
@@ -87,7 +69,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: data.error || 'Неверное имя пользователя или пароль' };
       }
     } catch (error) {
-      return { success: false, error: 'Произошла ошибка при входе' };
+      console.error('Login error:', error);
+      return { success: false, error: error.response?.data?.error || 'Произошла ошибка при входе' };
     }
   };
 
@@ -99,46 +82,30 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const response = await fetch('http://localhost:8000/api/logout/', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-
-      // Очищаем данные пользователя
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem('authToken');
-      
-      return { success: true };
+      await api.post('/logout/');
     } catch (error) {
-      // В случае ошибки все равно очищаем данные
+      console.error('Logout error:', error);
+    } finally {
+      // В любом случае очищаем данные пользователя
       setUser(null);
       setToken(null);
       localStorage.removeItem('authToken');
-      return { success: true };
     }
+    return { success: true };
   };
 
   // Регистрация нового пользователя
   const register = async (username, email, password) => {
     try {
-      const response = await fetch('http://localhost:8000/api/register/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          username,
-          email,
-          password
-        }),
+      const response = await api.post('/register/', {
+        username,
+        email,
+        password
       });
 
-      const data = await response.json();
+      const data = response.data;
 
-      if (response.ok && data.success) {
+      if (data.success) {
         // Автоматический вход после регистрации
         if (data.token) {
           setToken(data.token);
@@ -151,7 +118,8 @@ export const AuthProvider = ({ children }) => {
         return { success: false, error: data.error || 'Ошибка регистрации' };
       }
     } catch (error) {
-      return { success: false, error: 'Произошла ошибка при регистрации' };
+      console.error('Registration error:', error);
+      return { success: false, error: error.response?.data?.error || 'Произошла ошибка при регистрации' };
     }
   };
 

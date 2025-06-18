@@ -23,7 +23,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                {% for product in products %}
+    {% for product in products %}
                                 <tr>
                                     <td>{{ product.name }}</td>
                                     <td>{{ product.price }} ₽</td>
@@ -47,10 +47,10 @@
                     <ul class="list-group mb-4">
                         {% for name in product_names %}
                         <li class="list-group-item">{{ name }}</li>
-                        {% empty %}
+    {% empty %}
                         <li class="list-group-item">Нет товаров</li>
-                        {% endfor %}
-                    </ul>
+    {% endfor %}
+  </ul>
                     
                     <!-- Демонстрация values -->
                     <h4>values('name', 'price', 'category__name') - словари с данными</h4>

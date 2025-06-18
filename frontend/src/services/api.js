@@ -19,18 +19,34 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    console.error('Request interceptor error:', error);
     return Promise.reject(error);
   }
 );
 
 // Обработка ответов
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // Добавляем отладочную информацию
+    console.log(`API Response [${response.config.method.toUpperCase()}] ${response.config.url}:`, response);
+    return response;
+  },
   (error) => {
+    // Добавляем отладочную информацию
+    console.error('API Error:', {
+      url: error.config?.url,
+      method: error.config?.method,
+      status: error.response?.status,
+      data: error.response?.data,
+      error: error.message
+    });
+
     if (error.response?.status === 401) {
       // Токен недействителен, очищаем localStorage
       localStorage.removeItem('authToken');
       console.log('Токен недействителен, требуется повторная авторизация');
+      // Можно добавить редирект на страницу входа
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }

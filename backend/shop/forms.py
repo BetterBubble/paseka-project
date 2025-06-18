@@ -163,15 +163,10 @@ class ReviewForm(forms.ModelForm):
 class OrderCreateForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['delivery_address', 'delivery_method']
+        fields = ['delivery_method', 'address']
         widgets = {
-            'delivery_address': forms.TextInput(attrs={
-                'class': 'form-control shadow-sm',
-                'placeholder': 'Введите адрес доставки'
-            }),
-            'delivery_method': forms.Select(attrs={
-                'class': 'form-control shadow-sm'
-            })
+            'address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
+            'delivery_method': forms.Select(attrs={'class': 'form-control'})
         }
         help_texts = {
             'delivery_address': 'Укажите полный адрес доставки, включая индекс',
@@ -184,7 +179,7 @@ class OrderCreateForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Пожалуйста, укажите полный адрес (город, улица, дом)'
             )
-        return address
+        return address 
 
 
 class ProductImageUploadForm(forms.ModelForm):

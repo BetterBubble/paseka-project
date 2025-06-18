@@ -19,6 +19,7 @@ const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [categories, setCategories] = useState([]);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const [showProfileDropdown, setShowProfileDropdown] = useState(false);
 
   // Эффект прокрутки для изменения стиля хедера
   useEffect(() => {
@@ -40,6 +41,7 @@ const Header = () => {
   useEffect(() => {
     setIsMobileMenuOpen(false);
     setShowCategoriesDropdown(false);
+    setShowProfileDropdown(false);
   }, [location]);
 
   // Обработчики событий для переключения модальных окон
@@ -202,46 +204,58 @@ const Header = () => {
                 <span className="action-text">{t.cart}</span>
               </Link>
 
-              {/* Переключатель языков */}
-              <LanguageSwitcher />
-
-              {/* Аутентификация */}
+              {/* Профиль */}
               {user ? (
-                <div className="user-menu">
-                  <div className="user-info">
+                <div 
+                  className="profile-dropdown"
+                  onMouseEnter={() => setShowProfileDropdown(true)}
+                  onMouseLeave={() => setShowProfileDropdown(false)}
+                >
                     <div className="user-avatar">
-                      <span>{user.username.charAt(0).toUpperCase()}</span>
-                    </div>
-                    <span className="user-name">{user.username}</span>
+                    {user.username ? user.username[0].toUpperCase() : '?'}
                   </div>
-                  <button onClick={handleLogout} className="action-btn logout-btn">
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z"/>
-                    </svg>
-                    <span className="action-text">
-                      {language === 'ru' ? 'Выйти' : 'Logout'}
-                    </span>
+                  
+                  {showProfileDropdown && (
+                    <div className="profile-dropdown-menu show">
+                      <div className="profile-dropdown-item">
+                        <i className="fas fa-user"></i>
+                        <span>{user.username}</span>
+                      </div>
+                      <div className="profile-dropdown-divider"></div>
+                      <Link to="/orders" className="profile-dropdown-item">
+                        <i className="fas fa-box"></i>
+                        <span>Ваши заказы</span>
+                      </Link>
+                      <div className="profile-dropdown-divider"></div>
+                      <button 
+                        className="profile-dropdown-item"
+                        onClick={handleLogout}
+                      >
+                        <i className="fas fa-sign-out-alt"></i>
+                        <span>Выйти</span>
                   </button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="auth-buttons">
                   <button 
+                    className="login-btn" 
                     onClick={() => handleAuthClick('login')} 
-                    className="action-btn login-btn"
                   >
-                    <svg viewBox="0 0 24 24" fill="currentColor">
-                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
-                    </svg>
-                    <span className="action-text">{t.login}</span>
+                    {t.login}
                   </button>
                   <button 
+                    className="register-btn"
                     onClick={() => handleAuthClick('register')} 
-                    className="action-btn register-btn"
                   >
-                    <span className="action-text">{t.register}</span>
+                    {t.register}
                   </button>
                 </div>
               )}
+
+              {/* Переключатель языка */}
+              <LanguageSwitcher />
 
               {/* Мобильное меню */}
               <button 

@@ -313,30 +313,10 @@ class OrderItemInline(admin.TabularInline):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ("id", "user_name", "created_at", "status", "total_price", "item_count")
-    list_filter = ("status", "delivery_method")
-    date_hierarchy = "created_at"
-    raw_id_fields = ("user",)
-    readonly_fields = ("created_at",)
+    list_display = ['id', 'user', 'created_at', 'status', 'total_cost']
+    list_filter = ['created_at', 'status']
+    search_fields = ['user__username', 'id']
     inlines = [OrderItemInline]
-    actions = [download_orders_pdf, export_to_csv]
-
-    def save_related(self, request, form, formsets, change):
-        """Пересчитываем total_price после сохранения связанных объектов"""
-        super().save_related(request, form, formsets, change)
-        # Пересчитываем общую сумму заказа
-        order = form.instance
-        total = sum(item.get_cost() for item in order.orderitem_set.all())
-        order.total_price = total
-        order.save()
-
-    @admin.display(description="Пользователь")
-    def user_name(self, obj):
-        return f"{obj.user.first_name} {obj.user.last_name}" if obj.user.first_name else obj.user.username
-
-    @admin.display(description="Кол-во товаров")
-    def item_count(self, obj):
-        return obj.orderitem_set.count()
 
 @admin.register(DeliveryMethod)
 class DeliveryMethodAdmin(admin.ModelAdmin):

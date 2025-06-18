@@ -12,6 +12,8 @@ import Cart from './pages/Cart';
 import About from './pages/About';
 import Contact from './pages/Contact';
 import ImageStatus from './components/ImageStatus';
+import OrdersPage from './pages/OrdersPage';
+import OrderDetail from './pages/OrderDetail';
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/image-status" element={<ImageStatus />} />
+              <Route path="/orders" element={<OrdersPage />} />
+              <Route path="/orders/:orderId" element={<OrderDetail />} />
             </Routes>
           </main>
           <Footer />

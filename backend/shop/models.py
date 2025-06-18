@@ -204,39 +204,35 @@ class DeliveryMethod(models.Model):
 
 class Order(models.Model):
     STATUS_CHOICES = [
-        ('pending', 'В ожидании'),
+        ('pending', 'В обработке'),
+        ('processing', 'Обрабатывается'),
         ('shipped', 'Отправлен'),
         ('delivered', 'Доставлен'),
+        ('cancelled', 'Отменен')
     ]
 
-    user = models.ForeignKey('auth.User', verbose_name="Пользователь", on_delete=models.CASCADE)
-    created_at = models.DateTimeField("Дата заказа", auto_now_add=True)
-    delivery_address = models.CharField("Адрес доставки", max_length=255)
-    delivery_method = models.ForeignKey(DeliveryMethod, verbose_name="Способ доставки", on_delete=models.SET_NULL, null=True)
-    status = models.CharField("Статус", max_length=20, choices=STATUS_CHOICES, default='pending')
-    total_price = models.DecimalField("Сумма", max_digits=10, decimal_places=2, default=0)
-    products = models.ManyToManyField(
-        Product,
-        through='OrderItem',
-        through_fields=('order', 'product'),
-        verbose_name="Товары в заказе"
-    )
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    full_name = models.CharField("ФИО", max_length=200, default='')
+    delivery_method = models.ForeignKey(DeliveryMethod, on_delete=models.SET_NULL, null=True)
+    address = models.TextField("Адрес доставки", default='')
+    created_at = models.DateTimeField(auto_now_add=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    products = models.ManyToManyField(Product, through='OrderItem')
+    total_cost = models.DecimalField("Общая стоимость", max_digits=10, decimal_places=2, default=0)
 
     class Meta:
         verbose_name = "Заказ"
         verbose_name_plural = "Заказы"
+        ordering = ['-created_at']
 
     def __str__(self):
-        return f"Заказ #{self.id} от {self.user}"
+        return f"Заказ {self.id} от {self.user.username}"
 
-    def calculate_total(self):
-        """Подсчет общей суммы заказа"""
-        return sum(item.get_cost() for item in self.orderitem_set.all())
-
-    def save(self, *args, **kwargs):
-        # Не пытаемся вычислить total_price при создании заказа
-        # так как товары ещё не добавлены. Это будет сделано в сериализаторе.
-        super().save(*args, **kwargs)
+    def update_total_cost(self):
+        """Обновить общую стоимость заказа"""
+        total = sum(item.get_cost() for item in self.orderitem_set.all())
+        self.total_cost = total
+        self.save()
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE)

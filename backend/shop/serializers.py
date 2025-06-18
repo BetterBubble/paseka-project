@@ -80,11 +80,25 @@ class ReviewSerializer(serializers.ModelSerializer):
         read_only_fields = ['user', 'created']
 
 class OrderItemSerializer(serializers.ModelSerializer):
-    product = ProductSerializer(read_only=True)
+    product_name = serializers.CharField(source='product.name', read_only=True)
+    product_image = serializers.SerializerMethodField()
+    product_price = serializers.DecimalField(source='price_at_purchase', max_digits=10, decimal_places=2, read_only=True)
+    total_price = serializers.SerializerMethodField()
     
     class Meta:
         model = OrderItem
-        fields = ['id', 'product', 'quantity', 'price_at_purchase']
+        fields = ['id', 'product', 'product_name', 'product_image', 'product_price', 'quantity', 'total_price']
+
+    def get_product_image(self, obj):
+        request = self.context.get('request')
+        if obj.product.image:
+            if request:
+                return request.build_absolute_uri(obj.product.image.url)
+            return obj.product.image.url
+        return None
+        
+    def get_total_price(self, obj):
+        return obj.price_at_purchase * obj.quantity
 
 class DeliveryMethodSerializer(serializers.ModelSerializer):
     class Meta:
@@ -92,50 +106,27 @@ class DeliveryMethodSerializer(serializers.ModelSerializer):
         fields = ['id', 'name', 'cost_policy']
 
 class OrderSerializer(serializers.ModelSerializer):
-    items = serializers.ListField(write_only=True, child=serializers.DictField(), required=False)
-    full_name = serializers.CharField(write_only=True, required=False)
-    delivery_method = serializers.PrimaryKeyRelatedField(queryset=DeliveryMethod.objects.all(), write_only=True, required=True)
+    items = OrderItemSerializer(source='orderitem_set', many=True, read_only=True)
+    total_cost = serializers.DecimalField(max_digits=10, decimal_places=2, read_only=True)
+    status_display = serializers.CharField(source='get_status_display', read_only=True)
+    delivery_method_name = serializers.CharField(source='delivery_method.name', read_only=True)
     
-    # Поля для чтения
-    order_items = OrderItemSerializer(source='orderitem_set', many=True, read_only=True)
-    delivery_method_info = DeliveryMethodSerializer(source='delivery_method', read_only=True)
-
     class Meta:
         model = Order
-        fields = ['id', 'user', 'created_at', 'status', 'delivery_address', 'delivery_method', 
-                 'delivery_method_info', 'total_price', 'items', 'full_name', 'order_items']
-        read_only_fields = ['user', 'created_at', 'total_price']
-
-    def to_representation(self, instance):
-        """Переопределяем метод для корректного возврата данных заказа"""
-        ret = super().to_representation(instance)
-        # Удаляем write_only поля из ответа, но оставляем delivery_address
-        ret.pop('items', None)
-        ret.pop('full_name', None)
-        ret.pop('delivery_method', None)  # Заменяется на delivery_method_info
-        return ret
+        fields = ['id', 'user', 'items', 'total_cost', 'status', 'status_display', 
+                 'delivery_method', 'delivery_method_name', 'address', 'created_at', 'full_name']
+        read_only_fields = ['user', 'total_cost', 'created_at']
 
     def create(self, validated_data):
         logger = logging.getLogger(__name__)
         
         try:
             user = self.context['request'].user
-            items_data = validated_data.pop('items', [])
-            full_name = validated_data.pop('full_name', '')
-            # Убираем total_price из validated_data если он там есть
-            validated_data.pop('total_price', None)
+            items_data = self.context['request'].data.get('items', [])
             
             logger.info(f"Creating order for user: {user}, items: {items_data}")
             
-            # Разделяем full_name на first_name и last_name (если возможно)
-            if full_name:
-                parts = full_name.strip().split(' ', 1)
-                user.first_name = parts[0]
-                if len(parts) > 1:
-                    user.last_name = parts[1]
-                user.save()
-            
-            # Создаём заказ без total_price (будет вычислена ниже)
+            # Создаём заказ без total_cost (будет вычислена ниже)
             order = Order.objects.create(user=user, **validated_data)
             logger.info(f"Order created: {order.id}")
             
@@ -165,7 +156,7 @@ class OrderSerializer(serializers.ModelSerializer):
                     pass
             
             # Обновляем итоговую сумму заказа
-            order.total_price = total_price
+            order.total_cost = total_price
             order.save()
             logger.info(f"Order total updated: {total_price}")
             
