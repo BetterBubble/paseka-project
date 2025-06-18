@@ -146,35 +146,79 @@ def cart_detail(request):
     cart = Cart(request)
     return render(request, 'shop/cart.html', {'cart': cart})
 
+@csrf_exempt
+@require_http_methods(["POST", "GET"])
 def contact_view(request):
     if request.method == 'POST':
-        form = ContactForm(request.POST)
-        if form.is_valid():
-            contact = form.save()  # Сохраняем в базу данных
-            
-            # Отправка email администратору
-            email_message = f"""
-            Новое сообщение от {contact.name}
-            Email: {contact.email}
-            Тема: {contact.subject}
-            
-            {contact.message}
-            """
+        # Проверяем, является ли запрос API запросом
+        is_api = request.headers.get('Content-Type') == 'application/json'
+        
+        if is_api:
             try:
+                data = json.loads(request.body)
+                form = ContactForm(data)
+            except json.JSONDecodeError:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Неверный формат данных'
+                }, status=400)
+        else:
+            form = ContactForm(request.POST)
+
+        if form.is_valid():
+            try:
+                contact = form.save()  # Сохраняем в базу данных
+                
+                # Отправка email администратору
+                email_message = f"""
+                Новое сообщение от {contact.name}
+                Email: {contact.email}
+                Тема: {contact.subject}
+                
+                {contact.message}
+                """
                 send_mail(
                     f"Новое сообщение: {contact.subject}",
                     email_message,
                     contact.email,
                     [settings.DEFAULT_FROM_EMAIL],
-                    fail_silently=False,
+                    fail_silently=True,
                 )
-                messages.success(request, 'Спасибо! Ваше сообщение успешно отправлено.')
-                return redirect('contact')
+
+                if is_api:
+                    return JsonResponse({
+                        'success': True,
+                        'message': 'Сообщение успешно отправлено'
+                    })
+                else:
+                    messages.success(request, 'Спасибо! Ваше сообщение успешно отправлено.')
+                    return redirect('contact')
+
             except Exception as e:
-                messages.error(request, 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.')
-    else:
+                if is_api:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Произошла ошибка при отправке сообщения'
+                    }, status=500)
+                else:
+                    messages.error(request, 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.')
+        else:
+            if is_api:
+                return JsonResponse({
+                    'success': False,
+                    'error': 'Проверьте правильность заполнения формы',
+                    'errors': form.errors
+                }, status=400)
+            
+    else:  # GET request
         form = ContactForm()
     
+    if request.headers.get('Content-Type') == 'application/json':
+        return JsonResponse({
+            'success': False,
+            'error': 'Метод не поддерживается'
+        }, status=405)
+        
     return render(request, 'shop/contact.html', {'form': form})
 
 def feedback_view(request):

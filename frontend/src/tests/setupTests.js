@@ -20,4 +20,18 @@ global.ResizeObserver = jest.fn().mockImplementation(() => ({
   observe: jest.fn(),
   unobserve: jest.fn(),
   disconnect: jest.fn(),
-})); 
+}));
+
+// Мок для IntersectionObserver
+global.IntersectionObserver = jest.fn().mockImplementation(() => ({
+  observe: jest.fn(),
+  unobserve: jest.fn(),
+  disconnect: jest.fn(),
+}));
+
+// Мок для fetch
+global.fetch = jest.fn();
+
+// Подавление консольных предупреждений во время тестов
+console.error = jest.fn();
+console.warn = jest.fn(); 

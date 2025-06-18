@@ -164,6 +164,11 @@ class OrderViewSet(viewsets.ModelViewSet):
             order = self.get_object()
             items_data = request.data.get('items', [])
             
+            # Обновляем основные поля заказа
+            serializer = self.get_serializer(order, data=request.data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            
             # Получаем список ID товаров, которые остаются в заказе
             remaining_item_ids = [item['id'] for item in items_data if int(item.get('quantity', 0)) > 0]
             

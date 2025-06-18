@@ -336,6 +336,7 @@ const ProductDetail = () => {
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(-1)}
                       disabled={quantity <= 1}
+                      aria-label="Уменьшить количество"
                     >
                       <i className="bi bi-dash"></i>
                     </button>
@@ -344,6 +345,7 @@ const ProductDetail = () => {
                       className="quantity-btn"
                       onClick={() => handleQuantityChange(1)}
                       disabled={quantity >= product.stock}
+                      aria-label="Увеличить количество"
                     >
                       <i className="bi bi-plus"></i>
                     </button>

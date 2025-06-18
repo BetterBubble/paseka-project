@@ -25,4 +25,5 @@ urlpatterns = [
     path('login/', views.login_user, name='api_login'),
     path('logout/', views.logout_user, name='api_logout'),
     path('current-user/', views.current_user, name='api_current_user'),
+    path('contact/', views.contact_view, name='api_contact'),
 ] + router.urls 

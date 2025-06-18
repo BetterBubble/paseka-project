@@ -95,10 +95,15 @@ const ProductCard = ({ product }) => {
             />
           ) : (
             <div 
+              data-testid="product-image-container"
               className="card-img-top d-flex align-items-center justify-content-center bg-light"
               style={{ height: '250px' }}
             >
-              <i className="bi bi-image text-muted" style={{ fontSize: '3rem' }}></i>
+              <i 
+                data-testid="product-image-placeholder"
+                className="bi bi-image text-muted"
+                style={{ fontSize: '3rem' }}
+              />
             </div>
           )}
         </div>

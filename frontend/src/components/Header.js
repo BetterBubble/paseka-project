@@ -125,7 +125,10 @@ const Header = () => {
             </Link>
 
             {/* Навигация */}
-            <div className={`navbar-nav ${isMobileMenuOpen ? 'navbar-nav--open' : ''}`}>
+            <div 
+              className={`navbar-nav ${isMobileMenuOpen ? 'navbar-nav--open' : ''}`}
+              data-testid="navbar-nav"
+            >
               <Link 
                 to="/" 
                 className={`nav-link ${isActive('/') ? 'nav-link--active' : ''}`}
@@ -211,7 +214,7 @@ const Header = () => {
                   onMouseEnter={() => setShowProfileDropdown(true)}
                   onMouseLeave={() => setShowProfileDropdown(false)}
                 >
-                    <div className="user-avatar">
+                    <div className="user-avatar" data-testid="user-avatar">
                     {user.username ? user.username[0].toUpperCase() : '?'}
                   </div>
                   
@@ -238,7 +241,7 @@ const Header = () => {
                   )}
                 </div>
               ) : (
-                <div className="auth-buttons">
+                <div className="auth-buttons" data-testid="auth-buttons">
                   <button 
                     className="login-btn" 
                     onClick={() => handleAuthClick('login')} 
@@ -258,13 +261,14 @@ const Header = () => {
               <LanguageSwitcher />
 
               {/* Мобильное меню */}
-              <button 
-                className={`mobile-menu-btn ${isMobileMenuOpen ? 'mobile-menu-btn--open' : ''}`}
+              <button
+                className="mobile-menu-btn"
+                data-testid="mobile-menu-btn"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               >
-                <span className="hamburger-line"></span>
-                <span className="hamburger-line"></span>
-                <span className="hamburger-line"></span>
+                <span className="hamburger-line" />
+                <span className="hamburger-line" />
+                <span className="hamburger-line" />
               </button>
             </div>
           </nav>

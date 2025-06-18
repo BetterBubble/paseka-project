@@ -1,6 +1,6 @@
 // Утилиты для работы с изображениями
 
-const DJANGO_BASE_URL = 'http://localhost:8001';
+const DJANGO_BASE_URL = 'http://localhost:8000';
 
 // Получить URL статического изображения
 export const getStaticImageUrl = (imagePath) => {

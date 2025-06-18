@@ -7,10 +7,11 @@ from django.utils.translation import gettext_lazy as _
 from django.core.cache import cache
 import secrets
 from datetime import timedelta
+from django.core.exceptions import ValidationError
 
 class Category(models.Model):
     name = models.CharField(_("Название категории"), max_length=100)
-    slug = models.SlugField(_("URL"), max_length=100, blank=True, null=True)
+    slug = models.SlugField(_("URL"), max_length=100, blank=True, null=True, unique=True)
     description = models.TextField(_("Описание"), blank=True)
 
     class Meta:
@@ -160,6 +161,14 @@ class Product(models.Model):
         cache.delete('available_products')
         super().save(*args, **kwargs)
 
+    def clean(self):
+        if self.price and self.price < 0:
+            raise ValidationError({'price': _('Цена не может быть отрицательной')})
+        if self.discount_price and self.discount_price < 0:
+            raise ValidationError({'discount_price': _('Цена со скидкой не может быть отрицательной')})
+        if self.discount_price and self.discount_price > self.price:
+            raise ValidationError({'discount_price': _('Цена со скидкой не может быть больше обычной цены')})
+
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, verbose_name="Пользователь")
     created = models.DateTimeField(auto_now_add=True, verbose_name="Создана")
@@ -226,13 +235,38 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"Заказ {self.id} от {self.user.username}"
+        return f'Заказ {self.id} от {self.user.username}'
 
     def update_total_cost(self):
-        """Обновить общую стоимость заказа"""
         total = sum(item.get_cost() for item in self.orderitem_set.all())
         self.total_cost = total
         self.save()
+
+    def export_to_csv(self):
+        """Экспорт заказа в CSV формат"""
+        items = self.orderitem_set.all()
+        csv_data = [
+            f"{self.full_name},{self.address},{self.total_cost}"
+        ]
+        for item in items:
+            csv_data.append(f"{item.product.name},{item.quantity},{item.price_at_purchase}")
+        return "\n".join(csv_data)
+
+    def export_to_json(self):
+        """Экспорт заказа в JSON формат"""
+        items = self.orderitem_set.all()
+        return {
+            'full_name': self.full_name,
+            'total_cost': str(self.total_cost),
+            'items': [
+                {
+                    'product_name': item.product.name,
+                    'quantity': item.quantity,
+                    'price': str(item.price_at_purchase)
+                }
+                for item in items
+            ]
+        }
 
 class OrderItem(models.Model):
     order = models.ForeignKey(Order, verbose_name="Заказ", on_delete=models.CASCADE)
