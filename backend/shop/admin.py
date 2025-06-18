@@ -137,7 +137,7 @@ def export_to_csv(modeladmin, request, queryset):
             str(order.user),
             order.created_at.strftime('%Y-%m-%d %H:%M'),
             order.get_status_display(),
-            order.total_price
+            order.total_cost
         ])
     
     return response
@@ -175,8 +175,8 @@ def download_orders_pdf(modeladmin, request, queryset):
             f"Статус: {order.get_status_display()}" if FONT_NAME == 'Arial-Unicode'
             else f"Status: {transliterate(order.get_status_display())}",
             
-            f"Сумма: {order.total_price} руб." if FONT_NAME == 'Arial-Unicode'
-            else f"Total: {order.total_price} RUB",
+            f"Сумма: {order.total_cost} руб." if FONT_NAME == 'Arial-Unicode'
+            else f"Total: {order.total_cost} RUB",
             
             f"Товары:" if FONT_NAME == 'Arial-Unicode' else "Products:"
         ]
@@ -317,6 +317,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'status']
     search_fields = ['user__username', 'id']
     inlines = [OrderItemInline]
+    actions = [export_to_csv, download_orders_pdf]
 
 @admin.register(DeliveryMethod)
 class DeliveryMethodAdmin(admin.ModelAdmin):
