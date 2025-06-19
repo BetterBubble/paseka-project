@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
+import Pagination from '../components/Pagination';
 import { useTranslations } from '../components/LanguageSwitcher';
 import api from '../services/api';
 import { getStaticImageUrl, STATIC_IMAGES } from '../utils/images';
@@ -12,18 +13,26 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [refreshMessage, setRefreshMessage] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalItems, setTotalItems] = useState(0);
+  const productsRef = useRef(null);
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (page = 1) => {
     try {
       const timestamp = new Date().getTime();
-      const response = await api.get(`/products/?_=${timestamp}`);
-      setProducts(response.data.results || response.data);
+      const searchQuery = searchTerm ? `&search=${encodeURIComponent(searchTerm)}` : '';
+      const response = await api.get(`/products/?page=${page}${searchQuery}&_=${timestamp}`);
+      
+      setProducts(response.data.results || []);
+      setTotalItems(response.data.count || 0);
+      setTotalPages(Math.ceil((response.data.count || 0) / 8)); // 8 - количество элементов на странице
     } catch (error) {
       console.error('Ошибка загрузки данных:', error);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchTerm]);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -36,23 +45,26 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
-    loadProducts();
+    loadProducts(currentPage);
     loadCategories();
-  }, [loadProducts, loadCategories]);
+  }, [loadProducts, loadCategories, currentPage]);
 
   const handleSearch = async (e) => {
     e.preventDefault();
-    if (!searchTerm.trim()) {
-      loadProducts();
-      return;
-    }
+    setCurrentPage(1); // Сбрасываем страницу на первую при новом поиске
+    await loadProducts(1);
+  };
 
-    try {
-      const timestamp = new Date().getTime();
-      const response = await api.get(`/products/?search=${encodeURIComponent(searchTerm)}&_=${timestamp}`);
-      setProducts(response.data.results || response.data);
-    } catch (error) {
-      console.error('Ошибка поиска:', error);
+  const handlePageChange = (page) => {
+    setCurrentPage(page);
+    // Прокручиваем к секции с товарами
+    if (productsRef.current) {
+      const offset = 20; // Отступ от верха секции в пикселях
+      const elementPosition = productsRef.current.offsetTop - offset;
+      window.scrollTo({
+        top: elementPosition,
+        behavior: 'smooth'
+      });
     }
   };
 
@@ -166,13 +178,13 @@ const Home = () => {
       </section>
 
       {/* Товары */}
-      <section className="py-5 animate__animated animate__fadeInUp" style={{background:'#fffbe6'}}>
+      <section ref={productsRef} className="py-5 animate__animated animate__fadeInUp" style={{background:'#fffbe6'}}>
         <div className="container">
           {searchTerm && (
             <h3 className="text-center text-honey mb-5 animate__animated animate__fadeInDown">
               {language === 'ru' 
-                ? `Результаты поиска: "${searchTerm}"` 
-                : `Search results: "${searchTerm}"`
+                ? `Результаты поиска: "${searchTerm}" (${totalItems})` 
+                : `Search results: "${searchTerm}" (${totalItems})`
               }
             </h3>
           )}
@@ -184,7 +196,8 @@ const Home = () => {
                   className="btn btn-outline-honey"
                   onClick={() => {
                     setSearchTerm('');
-                    loadProducts();
+                    setCurrentPage(1);
+                    loadProducts(1);
                   }}
                 >
                   {language === 'ru' ? 'Показать все товары' : 'Show all products'}
@@ -192,13 +205,24 @@ const Home = () => {
               )}
             </div>
           ) : (
-            <div className="row g-4">
-              {products.map((product, idx) => (
-                <div key={product.id} className="col-lg-3 col-md-4 col-sm-6 animate__animated animate__fadeInUp" style={{animationDelay: `${0.05 * idx}s`}}>
-                  <ProductCard product={product} />
-                </div>
-              ))}
-            </div>
+            <>
+              <div className="row g-4">
+                {products.map((product, idx) => (
+                  <div key={product.id} className="col-lg-3 col-md-4 col-sm-6 animate__animated animate__fadeInUp" style={{animationDelay: `${0.05 * idx}s`}}>
+                    <ProductCard product={product} />
+                  </div>
+                ))}
+              </div>
+              
+              {/* Пагинация */}
+              {totalPages > 1 && (
+                <Pagination
+                  currentPage={currentPage}
+                  totalPages={totalPages}
+                  onPageChange={handlePageChange}
+                />
+              )}
+            </>
           )}
         </div>
       </section>

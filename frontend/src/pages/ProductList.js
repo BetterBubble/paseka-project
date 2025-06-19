@@ -198,11 +198,15 @@ const ProductList = () => {
 
     // Сортировка
     filtered.sort((a, b) => {
+      // Получаем актуальные цены (с учетом скидок)
+      const priceA = parseFloat(a.discount_price || a.price);
+      const priceB = parseFloat(b.discount_price || b.price);
+
       switch (sortBy) {
         case 'price_asc':
-          return a.price - b.price;
+          return priceA - priceB;
         case 'price_desc':
-          return b.price - a.price;
+          return priceB - priceA;
         case 'name':
           return a.name.localeCompare(b.name);
         case 'rating':

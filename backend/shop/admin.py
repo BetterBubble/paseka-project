@@ -3,7 +3,7 @@ from .models import Category, Manufacturer, Region, Product
 from .models import Order, OrderItem, Review, DeliveryMethod
 from .models import Contact, Feedback
 import io
-from django.http import FileResponse
+from django.http import FileResponse, HttpResponse
 from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -11,6 +11,9 @@ from reportlab.lib.pagesizes import letter, A4
 import os
 from decimal import Decimal
 from django.utils.html import format_html
+from openpyxl import Workbook
+from openpyxl.styles import Font, PatternFill, Alignment
+from datetime import datetime
 
 # Регистрируем шрифт для поддержки кириллицы
 try:
@@ -206,6 +209,73 @@ def download_orders_pdf(modeladmin, request, queryset):
     buffer.seek(0)
     return FileResponse(buffer, as_attachment=True, filename='orders_report.pdf')
 
+@admin.action(description="Экспорт в Excel")
+def export_to_excel(modeladmin, request, queryset):
+    """Экспорт заказов в Excel с детальной информацией"""
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Заказы"
+
+    # Стили для заголовков
+    header_font = Font(bold=True)
+    header_fill = PatternFill(start_color='CCCCCC', end_color='CCCCCC', fill_type='solid')
+    
+    # Заголовки для основной информации о заказе
+    headers = ['ID заказа', 'Пользователь', 'Дата создания', 'Статус', 'Общая сумма', 
+              'Адрес доставки', 'ФИО получателя']
+    
+    # Установка ширины столбцов
+    for i, header in enumerate(headers, 1):
+        ws.column_dimensions[chr(64 + i)].width = 20
+    
+    # Запись заголовков
+    for col, header in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col)
+        cell.value = header
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center')
+
+    # Заполнение данными
+    row = 2
+    for order in queryset:
+        # Основная информация о заказе
+        ws.cell(row=row, column=1, value=order.id)
+        ws.cell(row=row, column=2, value=str(order.user))
+        ws.cell(row=row, column=3, value=order.created_at.strftime('%Y-%m-%d %H:%M'))
+        ws.cell(row=row, column=4, value=order.get_status_display())
+        ws.cell(row=row, column=5, value=float(order.total_cost))
+        ws.cell(row=row, column=6, value=order.address)
+        ws.cell(row=row, column=7, value=order.full_name)
+        
+        # Добавляем подзаголовок для товаров
+        row += 2
+        product_headers = ['Товар', 'Количество', 'Цена за единицу', 'Общая стоимость']
+        for col, header in enumerate(product_headers, 2):
+            cell = ws.cell(row=row, column=col)
+            cell.value = header
+            cell.font = header_font
+        
+        # Добавляем информацию о товарах
+        row += 1
+        for item in order.orderitem_set.all():
+            ws.cell(row=row, column=2, value=item.product.name)
+            ws.cell(row=row, column=3, value=item.quantity)
+            ws.cell(row=row, column=4, value=float(item.price_at_purchase))
+            ws.cell(row=row, column=5, value=float(item.price_at_purchase * item.quantity))
+            row += 1
+        
+        # Пустая строка между заказами
+        row += 1
+
+    # Создаем HTTP-ответ
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename=orders_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
+    
+    # Сохраняем рабочую книгу
+    wb.save(response)
+    return response
+
 # КЛАССЫ АДМИНИСТРАТОРА
 
 @admin.register(Category)
@@ -317,7 +387,7 @@ class OrderAdmin(admin.ModelAdmin):
     list_filter = ['created_at', 'status']
     search_fields = ['user__username', 'id']
     inlines = [OrderItemInline]
-    actions = [export_to_csv, download_orders_pdf]
+    actions = [export_to_csv, download_orders_pdf, export_to_excel]
 
 @admin.register(DeliveryMethod)
 class DeliveryMethodAdmin(admin.ModelAdmin):
