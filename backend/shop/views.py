@@ -1,5 +1,5 @@
 from django.shortcuts import render
-from .models import Product, Category, Manufacturer
+from .models import Product, Category, Manufacturer, Region
 from django.shortcuts import render, get_object_or_404, redirect
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.contrib.auth.forms import UserCreationForm
@@ -316,6 +316,7 @@ def search(request):
     if query:
         results = Product.objects.filter(name__icontains=query)
     return render(request, 'shop/search_results.html', {'query': query, 'results': results})
+
 
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
@@ -843,3 +844,36 @@ def upload_product_images(request):
         form = ProductImageUploadForm()
     
     return render(request, 'shop/upload_form.html', {'form': form})
+
+def search_complex_products(request):
+    """
+    Сложный поиск товаров с использованием Q объектов:
+    - Мед ИЛИ товары дороже 3000 рублей
+    - Доступные товары
+    - НЕ из Алтайского региона
+    """
+    complex_query = Q(product_type='honey') | Q(price__gt=3000)
+    complex_query &= Q(available=True)
+    complex_query &= ~Q(region__name='Алтайский край')
+    
+    products = Product.objects.filter(complex_query).select_related('category', 'manufacturer', 'region')
+    return render(request, 'shop/search_results.html', {
+        'query': 'Сложный поиск',
+        'results': products
+    })
+
+def find_special_offers(request):
+    """
+    Поиск специальных предложений:
+    - Товары со скидкой И количеством > 15
+    ИЛИ
+    - Дорогие товары (>4000р) без скидки
+    """
+    special_query = (Q(discount_price__isnull=False) & Q(stock_quantity__gt=15)) | \
+                   (Q(price__gt=4000) & Q(discount_price__isnull=True))
+    
+    products = Product.objects.filter(special_query).select_related('category', 'manufacturer', 'region')
+    return render(request, 'shop/search_results.html', {
+        'query': 'Специальные предложения',
+        'results': products
+    })

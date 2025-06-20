@@ -8,6 +8,8 @@ import { CartProvider } from '../../context/CartContext';
 import { AuthProvider } from '../../context/AuthContext';
 import { LanguageProvider } from '../../components/LanguageSwitcher';
 
+
+// Это тестовые данные, имитирующие реальный продукт из базы данных
 const mockProduct = {
   id: 1,
   name: 'Мёд цветочный',
@@ -23,6 +25,8 @@ const mockProduct = {
 };
 
 // Мок для API запросов
+// Имитирует работу реального API, возвращая 
+// тестовые данные вместо реальных запросов к серверу
 const mockApi = {
   get: jest.fn((url) => {
     if (url === '/products/') {
@@ -84,6 +88,8 @@ const mockAddToCart = jest.fn().mockImplementation((productId, quantity = 1) => 
   return Promise.resolve({ success: true });
 });
 
+// Моки контекстов
+// Имитирует работу контекста корзины, авторизации и переводов
 const mockCartContext = {
   cartItems: [],
   addToCart: mockAddToCart,
@@ -100,6 +106,7 @@ jest.mock('../../context/CartContext', () => ({
 }));
 
 // Обертка для компонентов с необходимыми провайдерами
+// Оборачивает тестируемые компоненты необходимыми провайдерами контекста.
 const renderWithProviders = (component) => {
   return render(
     <BrowserRouter>

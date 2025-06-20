@@ -261,7 +261,7 @@ const Header = () => {
               <LanguageSwitcher />
 
               {/* Мобильное меню */}
-              <button
+              <button 
                 className="mobile-menu-btn"
                 data-testid="mobile-menu-btn"
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}

@@ -206,13 +206,13 @@ const Home = () => {
             </div>
           ) : (
             <>
-              <div className="row g-4">
-                {products.map((product, idx) => (
-                  <div key={product.id} className="col-lg-3 col-md-4 col-sm-6 animate__animated animate__fadeInUp" style={{animationDelay: `${0.05 * idx}s`}}>
-                    <ProductCard product={product} />
-                  </div>
-                ))}
-              </div>
+            <div className="row g-4">
+              {products.map((product, idx) => (
+                <div key={product.id} className="col-lg-3 col-md-4 col-sm-6 animate__animated animate__fadeInUp" style={{animationDelay: `${0.05 * idx}s`}}>
+                  <ProductCard product={product} />
+                </div>
+              ))}
+            </div>
               
               {/* Пагинация */}
               {totalPages > 1 && (

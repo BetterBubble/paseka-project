@@ -48,6 +48,8 @@ urlpatterns = [
     path('feedback/', feedback_view, name='feedback'),
     path('product/<int:product_id>/review/', add_review, name='add_review'),
     path('search/', views.search, name='search'),
+    path('search/complex/', views.search_complex_products, name='search_complex'),
+    path('special-offers/', views.find_special_offers, name='special_offers'),
 
     # API URLs (основные для SPA) - ДОЛЖНО БЫТЬ ПЕРВЫМ!
     path('api/', include('shop.api_urls')),

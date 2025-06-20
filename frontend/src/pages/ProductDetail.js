@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
+import ReviewSection from '../components/ReviewSection';
 import api from '../services/api';
 
 const ProductDetail = () => {
@@ -454,56 +455,13 @@ const ProductDetail = () => {
       </section>
 
       {/* Reviews Section */}
-      {reviews.length > 0 && (
-        <section ref={reviewsRef} className="reviews-section">
-          <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">
-                <i className="bi bi-chat-dots me-2"></i>
-                Отзывы покупателей
-              </h2>
-              <p className="section-subtitle">
-                Что говорят наши клиенты о данном товаре
-              </p>
-            </div>
-
-            <div className="reviews-grid">
-              {reviews.map((review, index) => (
-                <div 
-                  key={review.id} 
-                  className="review-card"
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  <div className="review-header">
-                    <div className="reviewer-info">
-                      <div className="reviewer-avatar">
-                        {review.user.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="reviewer-details">
-                        <h4 className="reviewer-name">{review.user}</h4>
-                        <div className="review-rating">
-                          {[...Array(5)].map((_, i) => (
-                            <i 
-                              key={i} 
-                              className={`bi bi-star${i < review.rating ? '-fill' : ''}`}
-                            ></i>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                    <div className="review-date">
-                      {new Date(review.created).toLocaleDateString('ru-RU')}
-                    </div>
-                  </div>
-                  <div className="review-content">
-                    <p>{review.comment}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
+      <ReviewSection 
+        reviews={reviews} 
+        productId={product.id} 
+        onReviewAdded={(newReview) => {
+          setReviews([...reviews, newReview]);
+        }} 
+      />
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (

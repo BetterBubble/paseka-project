@@ -110,7 +110,7 @@ describe('ProductCard Component', () => {
   describe('Базовые тесты отображения', () => {
     test('рендерит карточку товара с базовыми данными', () => {
       renderWithProviders(<ProductCard product={baseProduct} />);
-      
+    
       expect(screen.getByText('Мёд цветочный')).toBeInTheDocument();
       expect(screen.getByText(/800/)).toBeInTheDocument();
       expect(screen.getByText(/₽/)).toBeInTheDocument();
@@ -119,11 +119,11 @@ describe('ProductCard Component', () => {
       expect(productImage).toBeInTheDocument();
       expect(productImage).toHaveAttribute('src', 'honey-image.jpg');
       expect(productImage).toHaveAttribute('alt', 'Мёд цветочный');
-    });
+  });
 
     test('корректно обрабатывает длинные названия товаров', () => {
       renderWithProviders(<ProductCard product={productWithLongName} />);
-      
+    
       const title = screen.getByText(/Очень длинное название/);
       expect(title).toBeInTheDocument();
       // Проверяем, что контейнер заголовка имеет ограничение по высоте
@@ -138,7 +138,7 @@ describe('ProductCard Component', () => {
       const discountBadge = screen.getByText(/-20%/);
       expect(discountBadge).toBeInTheDocument();
       expect(discountBadge.closest('span')).toHaveClass('badge', 'bg-danger');
-    });
+  });
 
     test('отображает максимальную скидку 50%', () => {
       renderWithProviders(<ProductCard product={maxDiscountProduct} />);
@@ -159,8 +159,8 @@ describe('ProductCard Component', () => {
 
   describe('Тесты доступности товара', () => {
     test('отображает статус "Нет в наличии"', () => {
-      renderWithProviders(<ProductCard product={outOfStockProduct} />);
-      
+    renderWithProviders(<ProductCard product={outOfStockProduct} />);
+    
       const outOfStockButton = screen.getByRole('button');
       expect(outOfStockButton).toHaveTextContent('Нет в наличии');
       expect(outOfStockButton).toBeDisabled();

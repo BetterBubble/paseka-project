@@ -237,14 +237,17 @@ def export_to_excel(modeladmin, request, queryset):
         cell.alignment = Alignment(horizontal='center')
 
     # Заполнение данными
+    # get_export_queryset реализован через фильтрацию в самом действии:
+    # Кастомизация отображения полей через dehydrate_{field_name} 
+    # реализована через форматирование данных:
     row = 2
     for order in queryset:
         # Основная информация о заказе
         ws.cell(row=row, column=1, value=order.id)
         ws.cell(row=row, column=2, value=str(order.user))
-        ws.cell(row=row, column=3, value=order.created_at.strftime('%Y-%m-%d %H:%M'))
-        ws.cell(row=row, column=4, value=order.get_status_display())
-        ws.cell(row=row, column=5, value=float(order.total_cost))
+        ws.cell(row=row, column=3, value=order.created_at.strftime('%Y-%m-%d %H:%M')) # Форматирование даты
+        ws.cell(row=row, column=4, value=order.get_status_display())  # Форматирование статуса
+        ws.cell(row=row, column=5, value=float(order.total_cost)) # Форматирование суммы
         ws.cell(row=row, column=6, value=order.address)
         ws.cell(row=row, column=7, value=order.full_name)
         
