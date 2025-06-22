@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import AuthModals from './AuthModals';
 import LanguageSwitcher, { useTranslations } from './LanguageSwitcher';
 import api from '../services/api';
+import './ProfileDropdown.css';
 
 const Header = () => {
   const { user, logout } = useAuth();
@@ -214,29 +215,55 @@ const Header = () => {
                   onMouseEnter={() => setShowProfileDropdown(true)}
                   onMouseLeave={() => setShowProfileDropdown(false)}
                 >
-                    <div className="user-avatar" data-testid="user-avatar">
+                  <div className="user-avatar" data-testid="user-avatar">
                     {user.username ? user.username[0].toUpperCase() : '?'}
                   </div>
                   
                   {showProfileDropdown && (
                     <div className="profile-dropdown-menu show">
-                      <div className="profile-dropdown-item">
-                        <i className="fas fa-user"></i>
-                        <span>{user.username}</span>
+                      <div className="profile-dropdown-header">
+                        <div className="profile-dropdown-username">
+                          {user.username}
+                        </div>
+                        <div className="profile-dropdown-email">
+                          {user.email}
+                        </div>
                       </div>
-                      <div className="profile-dropdown-divider"></div>
-                      <Link to="/orders" className="profile-dropdown-item">
-                        <i className="fas fa-box"></i>
-                        <span>Ваши заказы</span>
-                      </Link>
-                      <div className="profile-dropdown-divider"></div>
-                      <button 
-                        className="profile-dropdown-item"
-                        onClick={handleLogout}
-                      >
-                        <i className="fas fa-sign-out-alt"></i>
-                        <span>Выйти</span>
-                  </button>
+
+                      <div className="profile-dropdown-content">
+                        <Link to="/profile" className="profile-dropdown-item">
+                          <i className="fas fa-user"></i>
+                          <span>{t.profile}</span>
+                        </Link>
+
+                        <Link to="/orders" className="profile-dropdown-item">
+                          <i className="fas fa-box"></i>
+                          <span>{t.orders}</span>
+                        </Link>
+
+                        <Link to="/favorites" className="profile-dropdown-item">
+                          <i className="fas fa-heart"></i>
+                          <span>{t.favorites}</span>
+                        </Link>
+
+                        <div className="profile-dropdown-divider"></div>
+
+                        <Link to="/settings" className="profile-dropdown-item">
+                          <i className="fas fa-cog"></i>
+                          <span>{t.settings}</span>
+                        </Link>
+
+                        <div className="profile-dropdown-divider"></div>
+
+                        <button 
+                          className="profile-dropdown-item logout"
+                          onClick={handleLogout}
+                          aria-label="Выйти из аккаунта"
+                        >
+                          <i className="fas fa-sign-out-alt"></i>
+                          <span>{t.logout}</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

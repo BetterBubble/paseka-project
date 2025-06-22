@@ -1,5 +1,8 @@
 .order-detail {
   padding: 2rem 0;
+  background: var(--gradient-light);
+  min-height: calc(100vh - 200px);
+  padding-top: calc(72px + 4rem); /* Увеличил с 2rem до 4rem для большего отступа */
 }
 
 .container {
@@ -9,27 +12,64 @@
 }
 
 .order-detail-header {
-  display: flex;
-  align-items: center;
-  gap: 2rem;
+  background: white;
+  padding: 2rem;
+  border-radius: 15px;
   margin-bottom: 2rem;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(244, 164, 96, 0.1);
 }
 
-.order-detail-header h1 {
+.order-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(244, 164, 96, 0.1);
+}
+
+.order-header-left {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.order-title {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.order-title h1 {
   margin: 0;
   font-size: 1.8rem;
-  color: #333;
+  color: var(--text-dark);
 }
 
 .order-info {
-  background: #f8f9fa;
-  padding: 1.5rem;
-  border-radius: 8px;
-  margin-bottom: 2rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 1.5rem;
 }
 
-.order-info p {
-  margin: 0.5rem 0;
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.info-label {
+  font-size: 0.9rem;
+  color: #666;
+  font-weight: 500;
+}
+
+.info-value {
+  font-size: 1.1rem;
+  color: var(--text-dark);
+  font-weight: 600;
 }
 
 .order-items {
@@ -261,6 +301,26 @@
 
 /* Адаптивность */
 @media (max-width: 768px) {
+  .order-header-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+  }
+
+  .order-header-left {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-title {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .order-info {
+    grid-template-columns: 1fr;
+  }
+
   .order-item {
     flex-direction: column;
     align-items: flex-start;

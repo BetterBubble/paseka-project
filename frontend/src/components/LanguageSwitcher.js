@@ -106,7 +106,12 @@ export const useTranslations = () => {
             addedToCart: 'Товар добавлен в корзину!',
             emptyCart: 'Корзина пуста',
             checkout: 'Оформить заказ',
-            removeFromCart: 'Удалить из корзины'
+            removeFromCart: 'Удалить из корзины',
+            profile: 'Профиль',
+            orders: 'Ваши заказы',
+            favorites: 'Избранное',
+            settings: 'Настройки',
+            logout: 'Выйти'
         },
         en: {
             catalog: 'Product Catalog',
@@ -137,7 +142,12 @@ export const useTranslations = () => {
             addedToCart: 'Product added to cart!',
             emptyCart: 'Cart is empty',
             checkout: 'Checkout',
-            removeFromCart: 'Remove from cart'
+            removeFromCart: 'Remove from cart',
+            profile: 'Profile',
+            orders: 'Your Orders',
+            favorites: 'Favorites',
+            settings: 'Settings',
+            logout: 'Logout'
         }
     };
 

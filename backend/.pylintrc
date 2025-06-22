@@ -1,0 +1,12 @@
+[MASTER]
+load-plugins=pylint_django
+django-settings-module=med_site.settings
+
+[MESSAGES CONTROL]
+disable=C0111,R0903,C0103,C0303,broad-except,imported-auth-user
+
+[FORMAT]
+max-line-length=120
+
+[DJANGO]
+django-settings-module=med_site.settings 
