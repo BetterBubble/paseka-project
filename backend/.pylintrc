@@ -1,9 +1,15 @@
 [MASTER]
 load-plugins=pylint_django
-django-settings-module=med_site.settings
+ignore=migrations,settings.py,manage.py
 
 [MESSAGES CONTROL]
-disable=C0111,R0903,C0103,C0303,broad-except,imported-auth-user
+disable=C0111,  # missing-docstring
+        C0103,  # invalid-name
+        C0330,  # bad-continuation
+        W0611,  # unused-import
+        R0903,  # too-few-public-methods
+        R0913,  # too-many-arguments
+        R0914   # too-many-locals
 
 [FORMAT]
 max-line-length=120
