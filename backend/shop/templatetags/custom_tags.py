@@ -15,11 +15,11 @@ register = template.Library()
 @register.filter
 def subtract(value: Union[int, float, Decimal], arg: Union[int, float, Decimal]) -> Union[int, float, Decimal]:
     """Вычитает arg из value.
-    
+
     Args:
         value: Уменьшаемое число
         arg: Вычитаемое число
-        
+
     Returns:
         Результат вычитания или исходное значение в случае ошибки
     """
@@ -31,11 +31,11 @@ def subtract(value: Union[int, float, Decimal], arg: Union[int, float, Decimal])
 @register.filter
 def percentage(value: Union[int, float, Decimal], total: Union[int, float, Decimal]) -> int:
     """Вычисляет процент value от total.
-    
+
     Args:
         value: Значение для расчета процента
         total: Общее значение
-        
+
     Returns:
         Процентное соотношение или 0 в случае ошибки
     """
@@ -50,10 +50,10 @@ def percentage(value: Union[int, float, Decimal], total: Union[int, float, Decim
 @register.inclusion_tag('shop/latest_products.html')
 def show_latest_products(count: int = 3) -> Dict[str, QuerySet[Product]]:
     """Показывает последние добавленные товары.
-    
+
     Args:
         count: Количество товаров для отображения
-        
+
     Returns:
         Словарь с QuerySet последних товаров
     """

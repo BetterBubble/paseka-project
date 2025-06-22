@@ -1,6 +1,13 @@
+"""
+Формы для работы с моделями магазина.
+Включает формы для отзывов, контактов, обратной связи и заказов.
+"""
+# Django imports
 from django import forms
-from .models import Review, Contact, Feedback, Order, Product
 from django.core.validators import EmailValidator
+
+# Local imports
+from .models import Review, Contact, Feedback, Order, Product
 
 class MultipleFileInput(forms.ClearableFileInput):
     """Кастомный виджет для загрузки нескольких файлов"""
@@ -21,10 +28,13 @@ class MultipleFileField(forms.FileField):
         return result
 
 class ContactForm(forms.ModelForm):
+    """Форма для отправки контактных сообщений"""
     def clean_email(self):
         email = self.cleaned_data['email']
         if not email.endswith(('.ru', '.com', '.org')):
-            raise forms.ValidationError('Пожалуйста, используйте действительный email-адрес с доменом .ru, .com или .org')
+            raise forms.ValidationError(
+                'Пожалуйста, используйте действительный email-адрес с доменом .ru, .com или .org'
+            )
         return email
 
     def clean_name(self):
@@ -60,8 +70,8 @@ class ContactForm(forms.ModelForm):
             'message': 'Подробно опишите ваш вопрос или предложение'
         }
 
-
 class FeedbackForm(forms.ModelForm):
+    """Форма для отправки обратной связи"""
     def clean_message(self):
         message = self.cleaned_data['message']
         if len(message.split()) < 10:
@@ -71,10 +81,11 @@ class FeedbackForm(forms.ModelForm):
     def clean_feedback_type(self):
         feedback_type = self.cleaned_data['feedback_type']
         if feedback_type == 'complaint':
-            # Если это жалоба, проверяем, есть ли сообщение
             message = self.data.get('message', '')
             if len(message) < 50:
-                raise forms.ValidationError('Для жалобы требуется более подробное описание (минимум 50 символов)')
+                raise forms.ValidationError(
+                    'Для жалобы требуется более подробное описание (минимум 50 символов)'
+                )
         return feedback_type
 
     class Meta:
@@ -103,8 +114,8 @@ class FeedbackForm(forms.ModelForm):
             'message': 'Опишите вашу ситуацию как можно подробнее'
         }
 
-
 class ReviewForm(forms.ModelForm):
+    """Форма для создания отзывов о товарах"""
     def clean_rating(self):
         rating = self.cleaned_data['rating']
         if rating < 1 or rating > 5:
@@ -116,9 +127,10 @@ class ReviewForm(forms.ModelForm):
         try:
             rating = self.cleaned_data['rating']
             if rating == 1 and len(comment) < 100:
-                raise forms.ValidationError('Для низкой оценки (1 звезда) необходимо подробное объяснение (минимум 100 символов)')
+                raise forms.ValidationError(
+                    'Для низкой оценки (1 звезда) необходимо подробное объяснение (минимум 100 символов)'
+                )
         except KeyError:
-            # Если rating еще не прошел валидацию
             pass
         return comment
 
@@ -126,7 +138,6 @@ class ReviewForm(forms.ModelForm):
         cleaned_data = super().clean()
         rating = cleaned_data.get('rating')
         comment = cleaned_data.get('comment')
-        
         if rating and rating <= 3 and (not comment or len(comment) < 50):
             raise forms.ValidationError(
                 'Для оценки 3 и ниже необходимо оставить комментарий (минимум 50 символов)'
@@ -141,32 +152,33 @@ class ReviewForm(forms.ModelForm):
             'comment': 'Ваш отзыв'
         }
         widgets = {
-            'rating': forms.Select(
-                attrs={
-                    'class': 'form-control shadow-sm'
-                }
-            ),
-            'comment': forms.Textarea(
-                attrs={
-                    'class': 'form-control shadow-sm',
-                    'placeholder': 'Поделитесь вашими впечатлениями о товаре...',
-                    'rows': 4
-                }
-            )
+            'rating': forms.Select(attrs={
+                'class': 'form-control shadow-sm'
+            }),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control shadow-sm',
+                'placeholder': 'Поделитесь вашими впечатлениями о товаре...',
+                'rows': 4
+            })
         }
         help_texts = {
             'rating': 'Оцените товар по шкале от 1 до 5',
             'comment': 'Расскажите, что вам понравилось или не понравилось'
         }
 
-
 class OrderCreateForm(forms.ModelForm):
+    """Форма для создания заказа"""
     class Meta:
         model = Order
         fields = ['delivery_method', 'address']
         widgets = {
-            'address': forms.Textarea(attrs={'rows': 3, 'class': 'form-control'}),
-            'delivery_method': forms.Select(attrs={'class': 'form-control'})
+            'address': forms.Textarea(attrs={
+                'rows': 3,
+                'class': 'form-control'
+            }),
+            'delivery_method': forms.Select(attrs={
+                'class': 'form-control'
+            })
         }
         help_texts = {
             'delivery_address': 'Укажите полный адрес доставки, включая индекс',
@@ -179,20 +191,16 @@ class OrderCreateForm(forms.ModelForm):
             raise forms.ValidationError(
                 'Пожалуйста, укажите полный адрес (город, улица, дом)'
             )
-        return address 
-
+        return address
 
 class ProductImageUploadForm(forms.ModelForm):
     """Форма для загрузки изображений товара с демонстрацией request.FILES"""
-    
-    # Кастомное поле для дополнительных изображений
     additional_images = MultipleFileField(
         label='Дополнительные изображения',
         required=False,
         help_text='Можно выбрать несколько изображений'
     )
-    
-    # CharField с Textarea widget
+
     upload_description = forms.CharField(
         label='Описание загрузки',
         widget=forms.Textarea(attrs={
@@ -202,10 +210,10 @@ class ProductImageUploadForm(forms.ModelForm):
         }),
         required=False
     )
-    
+
     class Meta:
         model = Product
-        fields = ['name', 'image', 'manual']  # Убираем upload_description из полей модели
+        fields = ['name', 'image', 'manual']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -238,9 +246,8 @@ class ProductImageUploadForm(forms.ModelForm):
                 'invalid': 'Загрузите корректное изображение'
             }
         }
-    
+
     class Media:
-        """Демонстрация class Media для подключения CSS и JS"""
         css = {
             'all': (
                 'admin/css/forms.css',
@@ -252,7 +259,7 @@ class ProductImageUploadForm(forms.ModelForm):
             'shop/js/image-preview.js',
             'shop/js/file-validation.js',
         )
-    
+
     def clean_image(self):
         """Валидация изображения"""
         image = self.cleaned_data.get('image')
@@ -262,14 +269,18 @@ class ProductImageUploadForm(forms.ModelForm):
             if not image.content_type.startswith('image/'):
                 raise forms.ValidationError('Файл должен быть изображением')
         return image
-    
+
     def clean_manual(self):
         """Валидация файла инструкции"""
         manual = self.cleaned_data.get('manual')
         if manual:
-            allowed_types = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document']
+            allowed_types = [
+                'application/pdf',
+                'application/msword',
+                'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+            ]
             if manual.content_type not in allowed_types:
                 raise forms.ValidationError('Инструкция должна быть в формате PDF или DOC')
             if manual.size > 10 * 1024 * 1024:  # 10MB
                 raise forms.ValidationError('Размер файла не должен превышать 10MB')
-        return manual 
+        return manual

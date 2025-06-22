@@ -59,10 +59,10 @@ except (OSError, IOError) as e:
 def transliterate(text):
     """
     Простая транслитерация для случаев, когда нет подходящего шрифта.
-    
+
     Args:
         text (str): Текст для транслитерации
-        
+
     Returns:
         str: Транслитерированный текст
     """
@@ -85,7 +85,7 @@ def transliterate(text):
 def mark_products_unavailable(modeladmin, request, queryset):
     """
     Дополнительное действие администратора - сделать товары недоступными.
-    
+
     Args:
         modeladmin: Экземпляр ModelAdmin
         request: HTTP запрос
@@ -102,7 +102,7 @@ def mark_products_unavailable(modeladmin, request, queryset):
 def apply_discount(modeladmin, request, queryset):
     """
     Дополнительное действие администратора - применить скидку к товарам.
-    
+
     Args:
         modeladmin: Экземпляр ModelAdmin
         request: HTTP запрос
@@ -110,13 +110,13 @@ def apply_discount(modeladmin, request, queryset):
     """
     updated_count = 0
     discount_multiplier = Decimal('0.9')  # 10% скидка
-    
+
     for product in queryset:
         if not product.discount_price:
             product.discount_price = product.price * discount_multiplier
             product.save()
             updated_count += 1
-    
+
     cache.clear()
     modeladmin.message_user(
         request,
@@ -127,7 +127,7 @@ def apply_discount(modeladmin, request, queryset):
 def remove_discount(modeladmin, request, queryset):
     """
     Дополнительное действие администратора - убрать скидку с товаров.
-    
+
     Args:
         modeladmin: Экземпляр ModelAdmin
         request: HTTP запрос
@@ -139,7 +139,7 @@ def remove_discount(modeladmin, request, queryset):
             product.discount_price = None
             product.save()
             updated_count += 1
-    
+
     cache.clear()
     modeladmin.message_user(
         request,
@@ -150,7 +150,7 @@ def remove_discount(modeladmin, request, queryset):
 def clear_product_cache(modeladmin, request, queryset):
     """
     Дополнительное действие администратора - очистка кеша.
-    
+
     Args:
         modeladmin: Экземпляр ModelAdmin
         request: HTTP запрос
@@ -164,12 +164,12 @@ def clear_product_cache(modeladmin, request, queryset):
 def export_to_csv(_, request, queryset):
     """
     Дополнительное действие администратора - экспорт заказов в CSV.
-    
+
     Args:
         _: Неиспользуемый аргумент modeladmin
         request: HTTP запрос
         queryset: QuerySet заказов для экспорта
-        
+
     Returns:
         HttpResponse: CSV файл для скачивания
     """
@@ -191,12 +191,12 @@ def export_to_csv(_, request, queryset):
 def download_orders_pdf(_, request, queryset):
     """
     Создает PDF-отчет по выбранным заказам.
-    
+
     Args:
         _: Неиспользуемый аргумент modeladmin
         request: HTTP запрос
         queryset: QuerySet заказов для экспорта
-        
+
     Returns:
         FileResponse: PDF файл для скачивания
     """
@@ -260,12 +260,12 @@ def download_orders_pdf(_, request, queryset):
 def export_to_excel(_, request, queryset):
     """
     Экспорт заказов в Excel с детальной информацией.
-    
+
     Args:
         _: Неиспользуемый аргумент modeladmin
         request: HTTP запрос
         queryset: QuerySet заказов для экспорта
-        
+
     Returns:
         HttpResponse: Excel файл для скачивания
     """
@@ -276,15 +276,15 @@ def export_to_excel(_, request, queryset):
     # Стили для заголовков
     header_font = Font(bold=True)
     header_fill = PatternFill(start_color='CCCCCC', end_color='CCCCCC', fill_type='solid')
-    
+
     # Заголовки для основной информации о заказе
-    headers = ['ID заказа', 'Пользователь', 'Дата создания', 'Статус', 'Общая сумма', 
+    headers = ['ID заказа', 'Пользователь', 'Дата создания', 'Статус', 'Общая сумма',
               'Адрес доставки', 'ФИО получателя']
-    
+
     # Установка ширины столбцов
     for i, header in enumerate(headers, 1):
         ws.column_dimensions[chr(64 + i)].width = 20
-    
+
     # Запись заголовков
     for col, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col)
@@ -295,7 +295,7 @@ def export_to_excel(_, request, queryset):
 
     # Заполнение данными
     # get_export_queryset реализован через фильтрацию в самом действии:
-    # Кастомизация отображения полей через dehydrate_{field_name} 
+    # Кастомизация отображения полей через dehydrate_{field_name}
     # реализована через форматирование данных:
     row = 2
     for order in queryset:
@@ -307,7 +307,7 @@ def export_to_excel(_, request, queryset):
         ws.cell(row=row, column=5, value=float(order.total_cost)) # Форматирование суммы
         ws.cell(row=row, column=6, value=order.address)
         ws.cell(row=row, column=7, value=order.full_name)
-        
+
         # Добавляем подзаголовок для товаров
         row += 2
         product_headers = ['Товар', 'Количество', 'Цена за единицу', 'Общая стоимость']
@@ -315,7 +315,7 @@ def export_to_excel(_, request, queryset):
             cell = ws.cell(row=row, column=col)
             cell.value = header
             cell.font = header_font
-        
+
         # Добавляем информацию о товарах
         row += 1
         for item in order.orderitem_set.all():
@@ -324,14 +324,14 @@ def export_to_excel(_, request, queryset):
             ws.cell(row=row, column=4, value=float(item.price_at_purchase))
             ws.cell(row=row, column=5, value=float(item.price_at_purchase * item.quantity))
             row += 1
-        
+
         # Пустая строка между заказами
         row += 1
 
     # Создаем HTTP-ответ
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
     response['Content-Disposition'] = f'attachment; filename=orders_{datetime.now().strftime("%Y%m%d_%H%M")}.xlsx'
-    
+
     # Сохраняем рабочую книгу
     wb.save(response)
     return response
@@ -381,7 +381,7 @@ class ProductAdmin(admin.ModelAdmin):
     raw_id_fields = ("category", "region", "manufacturer")
     actions = [mark_products_unavailable, apply_discount, remove_discount, clear_product_cache]
     prepopulated_fields = {'slug': ('name',)}
-    
+
     fieldsets = (
         ('Основная информация', {
             'fields': ('name', 'slug', 'description', 'category', 'manufacturer',
@@ -447,7 +447,7 @@ class OrderItemInline(admin.TabularInline):
     def save_formset(self, request, formset):
         """
         Сохраняет набор форм для встроенной модели.
-        
+
         Args:
             request: HTTP запрос
             formset: Набор форм встроенной модели

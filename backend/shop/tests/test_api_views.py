@@ -44,7 +44,7 @@ class ProductAPITest(TestCase):
         response = self.client.get(url)
         products = Product.objects.filter(available=True)
         serializer = ProductSerializer(products, many=True, context={'request': response.wsgi_request})
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(len(response.data['results']), 1)
@@ -55,7 +55,7 @@ class ProductAPITest(TestCase):
         url = reverse('product-detail', kwargs={'slug': self.product.slug})
         response = self.client.get(url)
         serializer = ProductSerializer(self.product, context={'request': response.wsgi_request})
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['id'], serializer.data['id'])
         self.assertEqual(response.data['name'], 'Липовый мед')
@@ -65,7 +65,7 @@ class ProductAPITest(TestCase):
     def test_filter_products_by_category(self):
         url = reverse('product-list')
         response = self.client.get(url, {'category': 'med'})
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(response.data['results'][0]['name'], 'Липовый мед')
@@ -73,7 +73,7 @@ class ProductAPITest(TestCase):
     def test_search_products(self):
         url = reverse('product-list')
         response = self.client.get(url, {'search': 'липовый'})
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(response.data['results'][0]['name'], 'Липовый мед')
@@ -119,7 +119,7 @@ class OrderAPITest(TestCase):
             ]
         }
         response = self.client.post(url, data, format='json')
-        
+
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Order.objects.count(), 1)
         order = Order.objects.first()
@@ -135,10 +135,10 @@ class OrderAPITest(TestCase):
             address='ул. Пчелиная, 1',
             delivery_method=self.delivery_method
         )
-        
+
         url = reverse('order-list')
         response = self.client.get(url)
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['count'], 1)
         self.assertEqual(response.data['results'][0]['id'], order.id)
@@ -158,7 +158,7 @@ class OrderAPITest(TestCase):
             quantity=2,
             price_at_purchase=self.product.price
         )
-        
+
         url = reverse('order-detail', kwargs={'pk': order.id})
         data = {
             'full_name': 'Петр Петров',
@@ -171,10 +171,10 @@ class OrderAPITest(TestCase):
             ]
         }
         response = self.client.patch(url, data, format='json')
-        
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         order.refresh_from_db()
         self.assertEqual(order.full_name, 'Петр Петров')
         self.assertEqual(order.address, 'ул. Медовая, 2')
         self.assertEqual(order.orderitem_set.first().quantity, 3)
-        self.assertEqual(order.total_cost, Decimal('1500.00'))  # 500 * 3 
+        self.assertEqual(order.total_cost, Decimal('1500.00'))  # 500 * 3

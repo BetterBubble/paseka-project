@@ -38,7 +38,7 @@ class AuthenticationTest(TestCase):
         self.assertTrue('token' in response_data)
         self.assertTrue('user' in response_data)
         self.assertEqual(response_data['user']['username'], 'testuser')
-        
+
         # Тест использования токена
         token = response_data['token']
         self.api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
@@ -69,7 +69,7 @@ class AuthenticationTest(TestCase):
             token='test_token',
             expires_at=timezone.now() - timedelta(days=1)
         )
-        
+
         # Пытаемся использовать истекший токен
         self.api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {expired_token.token}')
         response = self.api_client.get(reverse('api_current_user'))
@@ -106,20 +106,20 @@ class AuthenticationTest(TestCase):
             content_type='application/json'
         )
         token = json.loads(response.content)['token']
-        
+
         # Используем токен
         self.api_client.credentials(HTTP_AUTHORIZATION=f'Bearer {token}')
-        
+
         # Выходим
         response = self.api_client.post(reverse('api_logout'))
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         response_data = json.loads(response.content)
         self.assertTrue(response_data['success'])
         self.assertEqual(response_data['message'], 'Выход выполнен успешно')
-        
+
         # Проверяем, что токен больше не работает
         response = self.api_client.get(reverse('api_current_user'))
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
         response_data = json.loads(response.content)
         self.assertFalse(response_data['success'])
-        self.assertEqual(response_data['error'], 'Недействительный токен') 
+        self.assertEqual(response_data['error'], 'Недействительный токен')

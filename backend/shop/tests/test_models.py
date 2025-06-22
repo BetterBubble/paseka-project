@@ -67,7 +67,7 @@ class ProductModelTest(TestCase):
         discount_price = original_price * Decimal('0.8')
         self.product.discount_price = discount_price
         self.product.save()
-        
+
         self.assertEqual(self.product.get_discount_percentage(), 20)
         self.assertEqual(self.product.get_final_price(), discount_price)
 
@@ -76,11 +76,11 @@ class ProductModelTest(TestCase):
         original_price = self.product.price
         self.product.discount_price = original_price * Decimal('0.8')
         self.product.save()
-        
+
         # Затем убираем скидку
         self.product.discount_price = None
         self.product.save()
-        
+
         self.assertEqual(self.product.get_final_price(), original_price)
         self.assertEqual(self.product.get_discount_percentage(), 0)
 
@@ -143,4 +143,4 @@ class OrderModelTest(TestCase):
         self.assertEqual(json_data['full_name'], self.order.full_name)
         self.assertEqual(Decimal(json_data['total_cost']), self.order.total_cost)
         self.assertEqual(len(json_data['items']), 1)
-        self.assertEqual(json_data['items'][0]['product_name'], self.product.name) 
+        self.assertEqual(json_data['items'][0]['product_name'], self.product.name)

@@ -1,45 +1,55 @@
-from django.shortcuts import render
-from .models import Product, Category, Manufacturer, Region
-from django.shortcuts import render, get_object_or_404, redirect
-from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth import login, logout
-from shop.models import Product
-from django.db.models import Avg, F, Q
-from .cart import Cart
-from django.contrib import messages
-from .forms import ContactForm, FeedbackForm, ReviewForm, OrderCreateForm, ProductImageUploadForm
-from django.core.mail import send_mail
+import json
 from django.conf import settings
-from .models import Order, OrderItem
+from django.contrib import messages
+from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import get_user_model
+from django.contrib.auth.forms import UserCreationForm
+from django.core.cache import cache
+from django.core.mail import send_mail
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction
+from django.db.models import Avg, F, Q
 from django.http import JsonResponse, Http404
 from django.middleware.csrf import get_token
+from django.shortcuts import render, get_object_or_404, redirect
+from django.utils import translation
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
-from django.contrib.auth.models import User
-import json
-from django.contrib.auth import authenticate
-from .models import AuthToken
-from django.core.cache import cache
-from django.views.decorators.cache import cache_page
-from django.utils.decorators import method_decorator
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
-from .serializers import ProductSerializer, CategorySerializer, ManufacturerSerializer
-from django.utils import translation
-from django.db import transaction
+
+from shop.models import (
+    Product, Category, Manufacturer, Region,
+    Order, OrderItem, AuthToken
+)
+from .cart import Cart
+from .forms import (
+    ContactForm, FeedbackForm, ReviewForm,
+    OrderCreateForm, ProductImageUploadForm
+)
+from .serializers import (
+    ProductSerializer, CategorySerializer,
+    ManufacturerSerializer
+)
+
+User = get_user_model()
+LANGUAGE_SESSION_KEY = '_language'
 
 def home(request):
     """Главная страница"""
-    # Оптимизированный запрос с select_related для уменьшения количества запросов к БД
-    latest_products = Product.objects.select_related('category', 'manufacturer').filter(available=True).order_by('-created_at')[:8]
-    
-    # Демонстрация работы с кешем
+    latest_products = (
+        Product.objects.select_related('category', 'manufacturer')
+        .filter(available=True)
+        .order_by('-created_at')[:8]
+    )
+
     popular_categories = cache.get('popular_categories')
     if not popular_categories:
         popular_categories = Category.objects.filter(products__available=True).distinct()[:4]
         cache.set('popular_categories', popular_categories, 300)  # 5 минут
-    
+
     context = {
         'latest_products': latest_products,
         'popular_categories': popular_categories,
@@ -47,11 +57,13 @@ def home(request):
     return render(request, 'shop/index.html', context)
 
 def avg_price(request):
+    """Вычисление средней цены товаров"""
     result = Product.objects.aggregate(Avg('price'))
     average_price = result['price__avg']
     return render(request, 'shop/avg_price.html', {'average': average_price})
 
 def product_detail(request, pk):
+    """Детальная информация о товаре"""
     product = get_object_or_404(
         Product.objects.select_related('category', 'manufacturer', 'region')
         .prefetch_related('reviews', 'reviews__user'),
@@ -60,23 +72,35 @@ def product_detail(request, pk):
     return render(request, 'shop/product_detail.html', {'product': product})
 
 def honey_products(request):
-    # 1. filter: только мед + chaining filters
-    honey = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type='honey').filter(available=True).exclude(stock_quantity=0)
+    """Список медовой продукции"""
+    honey = (
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .filter(product_type='honey')
+        .filter(available=True)
+        .exclude(stock_quantity=0)
+    )
     return render(request, 'shop/honey_list.html', {'products': honey})
 
 def products_with_image(request):
-    # 2. exclude: исключаем товары без изображения + limiting QuerySets
-    products = Product.objects.select_related('category', 'manufacturer', 'region').exclude(image__isnull=True).exclude(image__exact='')[:10]  # Ограничиваем до 10
+    """Список товаров с изображениями"""
+    products = (
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .exclude(image__isnull=True)
+        .exclude(image__exact='')[:10]
+    )
     return render(request, 'shop/products_with_image.html', {'products': products})
 
 def expensive_products(request):
-    # 3. order_by: сортировка по цене (убывание) + values() и values_list()
-    expensive = Product.objects.select_related('category', 'manufacturer', 'region').filter(price__gte=5000).order_by('-price')[:5]
-    
-    # Демонстрация values() и values_list()
-    product_names = Product.objects.values_list('name', flat=True)[:10]  # Только названия
-    product_data = Product.objects.values('name', 'price', 'category__name')[:10]  # Словари с данными
-    
+    """Список дорогих товаров"""
+    expensive = (
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .filter(price__gte=5000)
+        .order_by('-price')[:5]
+    )
+
+    product_names = Product.objects.values_list('name', flat=True)[:10]
+    product_data = Product.objects.values('name', 'price', 'category__name')[:10]
+
     context = {
         'products': expensive,
         'product_names': product_names,
@@ -85,31 +109,36 @@ def expensive_products(request):
     return render(request, 'shop/expensive_products.html', context)
 
 def altai_products(request):
-    products = Product.objects.select_related('category', 'manufacturer', 'region').filter(region__name__icontains='алтай')
+    """Список товаров из Алтая"""
+    products = (
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .filter(region__name__icontains='алтай')
+    )
     return render(request, 'shop/honey_list.html', {'products': products})
 
 def signup(request):
+    """Регистрация нового пользователя"""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             form.save()
-            return redirect('login')  # перенаправляем на логин после успешной регистрации
-    else:
-        form = UserCreationForm()
+            return redirect('login')
+    form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 def register(request):
+    """Регистрация с автоматическим входом"""
     if request.method == 'POST':
         form = UserCreationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             return redirect('/')
-    else:
-        form = UserCreationForm()
+    form = UserCreationForm()
     return render(request, 'registration/register.html', {'form': form})
 
 def about(request):
+    """Страница о компании"""
     return render(request, 'shop/about.html')
 
 PRODUCT_TYPE_TITLES = {
@@ -120,61 +149,65 @@ PRODUCT_TYPE_TITLES = {
     'wax': 'Воск'
 }
 
-
-def products_by_type(request, type):
-    products = Product.objects.select_related('category', 'manufacturer', 'region').filter(product_type=type)
-    title = PRODUCT_TYPE_TITLES.get(type, 'Категория')
+def products_by_type(request, product_type):
+    """Список товаров определенного типа"""
+    products = (
+        Product.objects.select_related('category', 'manufacturer', 'region')
+        .filter(product_type=product_type)
+    )
+    title = PRODUCT_TYPE_TITLES.get(product_type, 'Категория')
     return render(request, 'shop/products_by_type.html', {
         'products': products,
-        'type': type,
+        'type': product_type,
         'title': title
     })
 
 def add_to_cart(request, product_id):
+    """Добавление товара в корзину"""
     cart = Cart(request)
     product = get_object_or_404(Product, id=product_id)
     cart.add(product)
     return redirect(request.GET.get('next', 'index'))
 
 def remove_from_cart(request, product_id):
+    """Удаление товара из корзины"""
     cart = Cart(request)
     product = get_object_or_404(Product, id=product_id)
     cart.remove(product)
     return redirect('cart_detail')
 
 def cart_detail(request):
+    """Детальная информация о корзине"""
     cart = Cart(request)
     return render(request, 'shop/cart.html', {'cart': cart})
 
 @csrf_exempt
 @require_http_methods(["POST", "GET"])
 def contact_view(request):
+    """Обработка контактной формы"""
     if request.method == 'POST':
-        # Проверяем, является ли запрос API запросом
         is_api = request.headers.get('Content-Type') == 'application/json'
-        
-        if is_api:
-            try:
-                data = json.loads(request.body)
-                form = ContactForm(data)
-            except json.JSONDecodeError:
-                return JsonResponse({
-                    'success': False,
-                    'error': 'Неверный формат данных'
-                }, status=400)
-        else:
-            form = ContactForm(request.POST)
 
-        if form.is_valid():
-            try:
-                contact = form.save()  # Сохраняем в базу данных
-                
-                # Отправка email администратору
+        try:
+            if is_api:
+                try:
+                    data = json.loads(request.body)
+                    form = ContactForm(data)
+                except json.JSONDecodeError:
+                    return JsonResponse({
+                        'success': False,
+                        'error': 'Неверный формат данных'
+                    }, status=400)
+            else:
+                form = ContactForm(request.POST)
+
+            if form.is_valid():
+                contact = form.save()
                 email_message = f"""
                 Новое сообщение от {contact.name}
                 Email: {contact.email}
                 Тема: {contact.subject}
-                
+
                 {contact.message}
                 """
                 send_mail(
@@ -190,50 +223,46 @@ def contact_view(request):
                         'success': True,
                         'message': 'Сообщение успешно отправлено'
                     })
-                else:
-                    messages.success(request, 'Спасибо! Ваше сообщение успешно отправлено.')
-                    return redirect('contact')
+                messages.success(request, 'Спасибо! Ваше сообщение успешно отправлено.')
+                return redirect('contact')
 
-            except Exception as e:
-                if is_api:
-                    return JsonResponse({
-                        'success': False,
-                        'error': 'Произошла ошибка при отправке сообщения'
-                    }, status=500)
-                else:
-                    messages.error(request, 'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.')
-        else:
             if is_api:
                 return JsonResponse({
                     'success': False,
                     'error': 'Проверьте правильность заполнения формы',
                     'errors': form.errors
                 }, status=400)
-            
-    else:  # GET request
-        form = ContactForm()
-    
+        except Exception as exc:
+            if is_api:
+                return JsonResponse({
+                    'success': False,
+                    'error': f'Произошла ошибка при обработке запроса: {str(exc)}'
+                }, status=500)
+            messages.error(
+                request,
+                'Произошла ошибка при отправке сообщения. Пожалуйста, попробуйте позже.'
+            )
+
+    form = ContactForm()
     if request.headers.get('Content-Type') == 'application/json':
         return JsonResponse({
             'success': False,
             'error': 'Метод не поддерживается'
         }, status=405)
-        
     return render(request, 'shop/contact.html', {'form': form})
 
 def feedback_view(request):
+    """Обработка формы обратной связи"""
     if request.method == 'POST':
         form = FeedbackForm(request.POST)
         if form.is_valid():
-            feedback = form.save()  # Сохраняем в базу данных
-            
-            # Отправка feedback администратору
+            feedback = form.save()
             email_message = f"""
             Новая обратная связь
             От: {feedback.name}
             Email: {feedback.email}
             Тип: {feedback.get_feedback_type_display()}
-            
+
             {feedback.message}
             """
             try:
@@ -246,16 +275,18 @@ def feedback_view(request):
                 )
                 messages.success(request, 'Спасибо за ваш отзыв! Мы обязательно рассмотрим его.')
                 return redirect('feedback')
-            except Exception as e:
-                messages.error(request, 'Произошла ошибка при отправке формы. Пожалуйста, попробуйте позже.')
-    else:
-        form = FeedbackForm()
-    
+            except Exception as exc:
+                messages.error(
+                    request,
+                    f'Произошла ошибка при отправке формы: {str(exc)}. Пожалуйста, попробуйте позже.'
+                )
+    form = FeedbackForm()
     return render(request, 'shop/feedback.html', {'form': form})
 
 def add_review(request, product_id):
+    """Добавление отзыва о товаре"""
     product = get_object_or_404(Product, id=product_id)
-    
+
     if request.method == 'POST':
         form = ReviewForm(request.POST)
         if form.is_valid():
@@ -265,44 +296,40 @@ def add_review(request, product_id):
             review.save()
             messages.success(request, 'Спасибо за ваш отзыв!')
             return redirect('product_detail', pk=product_id)
-    else:
-        form = ReviewForm()
-    
+    form = ReviewForm()
     return render(request, 'shop/add_review.html', {
         'form': form,
         'product': product
     })
 
 def create_order(request):
+    """Создание нового заказа"""
     cart = Cart(request)
     if request.method == 'POST':
         form = OrderCreateForm(request.POST)
         if form.is_valid():
-            order = form.save(commit=False)
-            order.user = request.user
-            order.save()
-            
-            # Создаем OrderItem для каждого товара в корзине
-            for item in cart:
-                OrderItem.objects.create(
-                    order=order,
-                    product=item['product'],
-                    quantity=item['quantity'],
-                    price_at_purchase=item['price']
-                )
-            
-            # Очищаем корзину
-            cart.clear()
-            
-            return redirect('order_detail', order_id=order.id)
-    else:
-        form = OrderCreateForm()
+            with transaction.atomic():
+                order = form.save(commit=False)
+                order.user = request.user
+                order.save()
+
+                for item in cart:
+                    OrderItem.objects.create(
+                        order=order,
+                        product=item['product'],
+                        quantity=item['quantity'],
+                        price_at_purchase=item['price']
+                    )
+                cart.clear()
+                return redirect('order_detail', order_id=order.id)
+    form = OrderCreateForm()
     return render(request, 'shop/order/create.html', {
         'cart': cart,
         'form': form
     })
 
 def order_detail(request, order_id):
+    """Детальная информация о заказе"""
     order = get_object_or_404(
         Order.objects.select_related('user', 'delivery_method')
         .prefetch_related('products', 'orderitem_set'),
@@ -310,13 +337,16 @@ def order_detail(request, order_id):
     )
     return render(request, 'shop/order_detail.html', {'order': order})
 
-def search(request):
+def search_products(request):
+    """Поиск товаров"""
     query = request.GET.get('q', '')
     results = []
     if query:
         results = Product.objects.filter(name__icontains=query)
-    return render(request, 'shop/search_results.html', {'query': query, 'results': results})
-
+    return render(request, 'shop/search_results.html', {
+        'query': query,
+        'results': results
+    })
 
 @ensure_csrf_cookie
 @require_http_methods(["GET"])
@@ -333,43 +363,39 @@ def register_user(request):
         username = data.get('username')
         email = data.get('email')
         password = data.get('password')
-        
-        # Валидация
-        if not username or not email or not password:
+
+        if not all([username, email, password]):
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Все поля обязательны для заполнения'
             }, status=400)
-        
+
         if len(password) < 6:
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Пароль должен содержать минимум 6 символов'
             }, status=400)
-        
-        # Проверка на существование пользователя
+
         if User.objects.filter(username=username).exists():
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Пользователь с таким именем уже существует'
             }, status=400)
-        
+
         if User.objects.filter(email=email).exists():
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Пользователь с таким email уже существует'
             }, status=400)
-        
-        # Создание пользователя
+
         user = User.objects.create_user(
             username=username,
             email=email,
             password=password
         )
-        
-        # Создаем токен для автоматического входа
+
         token = AuthToken.objects.create(user=user)
-        
+
         return JsonResponse({
             'success': True,
             'message': 'Регистрация прошла успешно!',
@@ -380,16 +406,15 @@ def register_user(request):
                 'email': user.email
             }
         })
-        
     except json.JSONDecodeError:
         return JsonResponse({
-            'success': False, 
+            'success': False,
             'error': 'Неверный формат данных'
         }, status=400)
-    except Exception as e:
+    except Exception as exc:
         return JsonResponse({
-            'success': False, 
-            'error': 'Произошла ошибка при регистрации'
+            'success': False,
+            'error': f'Произошла ошибка при регистрации: {str(exc)}'
         }, status=500)
 
 @csrf_exempt
@@ -400,55 +425,44 @@ def login_user(request):
         data = json.loads(request.body)
         username = data.get('username')
         password = data.get('password')
-        
-        # Валидация
-        if not username or not password:
+
+        if not all([username, password]):
             return JsonResponse({
-                'success': False, 
+                'success': False,
                 'error': 'Имя пользователя и пароль обязательны'
             }, status=400)
-        
-        # Аутентификация
+
         user = authenticate(request, username=username, password=password)
-        
-        if user is not None:
-            if user.is_active:
-                # Удаляем старые токены пользователя
-                AuthToken.objects.filter(user=user).delete()
-                
-                # Создаем новый токен
-                token = AuthToken.objects.create(user=user)
-                
-                return JsonResponse({
-                    'success': True,
-                    'message': 'Вход выполнен успешно!',
-                    'token': token.token,
-                    'user': {
-                        'id': user.id,
-                        'username': user.username,
-                        'email': user.email
-                    }
-                })
-            else:
-                return JsonResponse({
-                    'success': False, 
-                    'error': 'Аккаунт деактивирован'
-                }, status=400)
-        else:
+
+        if user is not None and user.is_active:
+            AuthToken.objects.filter(user=user).delete()
+            token = AuthToken.objects.create(user=user)
+
             return JsonResponse({
-                'success': False, 
-                'error': 'Неверное имя пользователя или пароль'
-            }, status=400)
-        
+                'success': True,
+                'message': 'Вход выполнен успешно!',
+                'token': token.token,
+                'user': {
+                    'id': user.id,
+                    'username': user.username,
+                    'email': user.email
+                }
+            })
+
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверное имя пользователя или пароль'
+        }, status=400)
+
     except json.JSONDecodeError:
         return JsonResponse({
-            'success': False, 
+            'success': False,
             'error': 'Неверный формат данных'
         }, status=400)
-    except Exception as e:
+    except Exception as exc:
         return JsonResponse({
-            'success': False, 
-            'error': 'Произошла ошибка при входе'
+            'success': False,
+            'error': f'Произошла ошибка при входе: {str(exc)}'
         }, status=500)
 
 @csrf_exempt
@@ -461,9 +475,9 @@ def current_user(request):
             'success': False,
             'error': 'Токен авторизации не предоставлен'
         }, status=401)
-    
+
     token_value = auth_header.split(' ')[1]
-    
+
     try:
         token = AuthToken.objects.get(token=token_value)
         if token.is_valid():
@@ -476,13 +490,11 @@ def current_user(request):
                     'is_authenticated': True
                 }
             })
-        else:
-            # Токен истек, удаляем его
-            token.delete()
-            return JsonResponse({
-                'success': False,
-                'error': 'Токен истек'
-            }, status=401)
+        token.delete()
+        return JsonResponse({
+            'success': False,
+            'error': 'Токен истек'
+        }, status=401)
     except AuthToken.DoesNotExist:
         return JsonResponse({
             'success': False,
@@ -499,9 +511,9 @@ def logout_user(request):
             'success': False,
             'error': 'Токен авторизации не предоставлен'
         }, status=401)
-    
+
     token_value = auth_header.split(' ')[1]
-    
+
     try:
         token = AuthToken.objects.get(token=token_value)
         token.delete()
@@ -517,49 +529,58 @@ def logout_user(request):
 
 # API Views для SPA
 class ProductListView(ListAPIView):
+    """API для списка товаров"""
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
-    
+
     def get_queryset(self):
-        # Базовый queryset всегда из модели Product
-        queryset = Product.objects.available().select_related('category', 'manufacturer', 'region')
-        
-        # Фильтрация по категории
+        queryset = (
+            Product.objects.available()
+            .select_related('category', 'manufacturer', 'region')
+        )
+
         category = self.request.query_params.get('category')
         if category:
             queryset = queryset.filter(category__slug=category)
-        
-        # Поиск по названию
-        search = self.request.query_params.get('search')
-        if search:
-            queryset = queryset.filter(name__icontains=search)
-            
+
+        search_query = self.request.query_params.get('search')
+        if search_query:
+            queryset = queryset.filter(name__icontains=search_query)
+
         return queryset
-    
+
     def list(self, request, *args, **kwargs):
         return super().list(request, *args, **kwargs)
 
 class ProductDetailView(RetrieveAPIView):
-    queryset = Product.objects.available().select_related('category', 'manufacturer', 'region')
+    """API для детальной информации о товаре"""
+    queryset = (
+        Product.objects.available()
+        .select_related('category', 'manufacturer', 'region')
+    )
     serializer_class = ProductSerializer
     permission_classes = [AllowAny]
 
 class CategoryListView(ListAPIView):
+    """API для списка категорий"""
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = [AllowAny]
     
-    @method_decorator(cache_page(60 * 10))  # Кешируем на 10 минут
+    @method_decorator(cache_page(60 * 10))
     def list(self, request, *args, **kwargs):
+        """Получение списка категорий с кешированием"""
         return super().list(request, *args, **kwargs)
 
 class ManufacturerListView(ListAPIView):
+    """API для списка производителей"""
     queryset = Manufacturer.objects.all()
     serializer_class = ManufacturerSerializer
     permission_classes = [AllowAny]
     
-    @method_decorator(cache_page(60 * 15))  # Кешируем на 15 минут
+    @method_decorator(cache_page(60 * 15))
     def list(self, request, *args, **kwargs):
+        """Получение списка производителей с кешированием"""
         return super().list(request, *args, **kwargs)
 
 # API Views для корзины
@@ -593,27 +614,26 @@ def add_to_cart_api(request):
         data = json.loads(request.body)
         product_id = data.get('product_id')
         quantity = data.get('quantity', 1)
-        
+
         product = get_object_or_404(Product, id=product_id)
         cart = Cart(request)
         cart.add(product, quantity=quantity)
-        
-        # Простой ответ для проверки
+
         return JsonResponse({
             'success': True,
             'message': f'Товар "{product.name}" добавлен в корзину',
             'product_id': product.id,
             'quantity': quantity
         })
-    except json.JSONDecodeError as e:
+    except json.JSONDecodeError as exc:
         return JsonResponse({
             'success': False,
-            'error': f'JSON decode error: {str(e)}'
+            'error': f'Ошибка формата JSON: {str(exc)}'
         }, status=400)
-    except Exception as e:
+    except Exception as exc:
         return JsonResponse({
             'success': False,
-            'error': f'Error: {str(e)}'
+            'error': f'Ошибка: {str(exc)}'
         }, status=400)
 
 @csrf_exempt
@@ -624,12 +644,11 @@ def update_cart(request):
         data = json.loads(request.body)
         product_id = data.get('product_id')
         quantity = data.get('quantity')
-        
+
         product = get_object_or_404(Product, id=product_id)
         cart = Cart(request)
         cart.add(product, quantity=quantity, update_quantity=True)
-        
-        # Возвращаем актуальные данные корзины
+
         cart_data = {
             'items': [
                 {
@@ -654,10 +673,10 @@ def update_cart(request):
             'message': 'Корзина обновлена'
         }
         return JsonResponse(cart_data)
-    except Exception as e:
+    except Exception as exc:
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': str(exc)
         }, status=400)
 
 @csrf_exempt
@@ -667,12 +686,11 @@ def remove_from_cart_api(request):
     try:
         data = json.loads(request.body)
         product_id = data.get('product_id')
-        
+
         product = get_object_or_404(Product, id=product_id)
         cart = Cart(request)
         cart.remove(product)
-        
-        # Возвращаем актуальные данные корзины
+
         cart_data = {
             'items': [
                 {
@@ -697,10 +715,10 @@ def remove_from_cart_api(request):
             'message': f'Товар "{product.name}" удален из корзины'
         }
         return JsonResponse(cart_data)
-    except Exception as e:
+    except Exception as exc:
         return JsonResponse({
             'success': False,
-            'error': str(e)
+            'error': str(exc)
         }, status=400)
 
 @csrf_exempt
@@ -723,26 +741,35 @@ def clear_cart(request):
 def set_language_api(request):
     """API endpoint для переключения языка"""
     try:
-        import json
         data = json.loads(request.body)
         language = data.get('language', 'ru')
         
         if language in ['ru', 'en']:
             translation.activate(language)
-            request.session[translation.LANGUAGE_SESSION_KEY] = language
+            request.session['django_language'] = language
             return JsonResponse({
-                'status': 'success', 
+                'status': 'success',
                 'language': language,
-                'message': f'Language changed to {language}'
+                'message': f'Язык изменен на {language}'
             })
         return JsonResponse({
-            'status': 'error', 
-            'message': 'Invalid language'
-        }, status=400)
-    except Exception as e:
-        return JsonResponse({
             'status': 'error',
-            'message': str(e)
+            'message': 'Неподдерживаемый язык'
+        }, status=400)
+    except json.JSONDecodeError:
+        return JsonResponse({
+            'success': False,
+            'error': 'Неверный формат данных'
+        }, status=400)
+    except (ValueError, TypeError) as exc:
+        return JsonResponse({
+            'success': False,
+            'error': f'Ошибка валидации данных: {str(exc)}'
+        }, status=400)
+    except Exception as exc:
+        return JsonResponse({
+            'success': False,
+            'error': f'Внутренняя ошибка сервера: {str(exc)}'
         }, status=500)
 
 # Новые функции для демонстрации недостающих возможностей
@@ -751,128 +778,113 @@ def bulk_operations_demo(request):
     """Демонстрация bulk операций update() и delete()"""
     if request.method == 'POST':
         action = request.POST.get('action')
-        
+
         if action == 'apply_discount':
-            # Массовое обновление - применяем скидку 10% к дорогим товарам
-            Product.objects.filter(price__gte=5000, discount_price__isnull=True).update(
-                discount_price=F('price') * 0.9
-            )
-            
+            Product.objects.filter(
+                price__gte=5000,
+                discount_price__isnull=True
+            ).update(discount_price=F('price') * 0.9)
         elif action == 'remove_out_of_stock':
-            # Массовое удаление товаров без остатка (только для демонстрации)
-            # В реальности лучше делать available=False
-            count = Product.objects.filter(stock_quantity=0, available=False).count()
-            Product.objects.filter(stock_quantity=0, available=False).delete()
-            
+            Product.objects.filter(
+                stock_quantity=0,
+                available=False
+            ).delete()
         elif action == 'increase_stock':
-            # F expressions - увеличиваем остаток на складе на 10
             Product.objects.filter(available=True).update(
                 stock_quantity=F('stock_quantity') + 10
             )
-            
     return render(request, 'shop/bulk_operations.html')
 
 def f_expressions_demo(request):
     """Демонстрация F expressions"""
-    # F expressions для вычислений на уровне БД
-    products_with_calculated_fields = Product.objects.annotate(
-        price_with_tax=F('price') * 1.2,  # Цена с НДС 20%
-        discount_amount=F('price') - F('discount_price'),  # Размер скидки
-        stock_value=F('price') * F('stock_quantity')  # Стоимость остатка
-    ).filter(available=True)
-    
-    return render(request, 'shop/f_expressions.html', {'products': products_with_calculated_fields})
+    products_with_calculated_fields = (
+        Product.objects.annotate(
+            price_with_tax=F('price') * 1.2,
+            discount_amount=F('price') - F('discount_price'),
+            stock_value=F('price') * F('stock_quantity')
+        ).filter(available=True)
+    )
+    return render(request, 'shop/f_expressions.html', {
+        'products': products_with_calculated_fields
+    })
 
 def product_detail_with_404(request, pk):
     """Демонстрация Http404 exception"""
     try:
-        product = Product.objects.select_related('category', 'manufacturer', 'region').get(pk=pk, available=True)
-    except Product.DoesNotExist:
-        raise Http404("Товар не найден или недоступен")
-    
-    # Chaining filters для связанных товаров
-    related_products = Product.objects.filter(
-        category=product.category
-    ).exclude(
-        pk=product.pk
-    ).filter(
-        available=True
-    )[:4]  # Limiting QuerySets
-    
-    context = {'product': product, 'related_products': related_products}
-    return render(request, 'shop/product_detail.html', context)
+        product = (
+            Product.objects.select_related('category', 'manufacturer', 'region')
+            .get(pk=pk, available=True)
+        )
+    except Product.DoesNotExist as exc:
+        raise Http404("Товар не найден или недоступен") from exc
+
+    related_products = (
+        Product.objects.filter(category=product.category)
+        .exclude(pk=product.pk)
+        .filter(available=True)[:4]
+    )
+
+    return render(request, 'shop/product_detail.html', {
+        'product': product,
+        'related_products': related_products
+    })
 
 def upload_product_images(request):
     """Демонстрация File Uploads и request.FILES"""
     if request.method == 'POST':
         form = ProductImageUploadForm(request.POST, request.FILES)
         if form.is_valid():
-            # Основные файлы из формы
             main_image = form.cleaned_data.get('image')
             manual_file = form.cleaned_data.get('manual')
             description = form.cleaned_data.get('upload_description')
-            
-            # Обработка дополнительных изображений из request.FILES
             additional_images = request.FILES.getlist('additional_images')
-            
-            # Сохраняем товар
-            product = form.save(commit=False)
-            product.description = description or 'Товар загружен через форму'
-            product.category_id = 1  # Временно присваиваем первую категорию
-            product.manufacturer_id = 1  # Временно присваиваем первого производителя
-            product.region_id = 1  # Временно присваиваем первый регион
-            product.price = 1000  # Временная цена
-            product.save()
-            
-            # Обработка дополнительных изображений
-            upload_info = {
-                'product_id': product.id,
-                'main_image': main_image.name if main_image else None,
-                'manual': manual_file.name if manual_file else None,
-                'additional_count': len(additional_images),
-                'additional_files': [img.name for img in additional_images]
-            }
-            
-            # В реальном проекте здесь бы сохранялись дополнительные изображения
-            # в отдельную модель или обрабатывались другим способом
-            
-            messages.success(request, f'Товар "{product.name}" успешно создан! Загружено файлов: {len(additional_images) + (1 if main_image else 0) + (1 if manual_file else 0)}')
-            return redirect('product_detail', pk=product.id)
-        else:
-            messages.error(request, 'Ошибка при загрузке файлов. Проверьте форму.')
-    else:
-        form = ProductImageUploadForm()
-    
+
+            with transaction.atomic():
+                product = form.save(commit=False)
+                product.description = description or 'Товар загружен через форму'
+                product.category_id = 1
+                product.manufacturer_id = 1
+                product.region_id = 1
+                product.price = 1000
+                product.save()
+
+                messages.success(
+                    request,
+                    f'Товар "{product.name}" успешно создан! '
+                    f'Загружено файлов: {len(additional_images) + bool(main_image) + bool(manual_file)}'
+                )
+                return redirect('product_detail', pk=product.id)
+
+        messages.error(request, 'Ошибка при загрузке файлов. Проверьте форму.')
+    form = ProductImageUploadForm()
     return render(request, 'shop/upload_form.html', {'form': form})
 
 def search_complex_products(request):
-    """
-    Сложный поиск товаров с использованием Q объектов:
-    - Мед ИЛИ товары дороже 3000 рублей
-    - Доступные товары
-    - НЕ из Алтайского региона
-    """
+    """Сложный поиск товаров с использованием Q объектов"""
     complex_query = Q(product_type='honey') | Q(price__gt=3000)
     complex_query &= Q(available=True)
     complex_query &= ~Q(region__name='Алтайский край')
-    
-    products = Product.objects.filter(complex_query).select_related('category', 'manufacturer', 'region')
+
+    products = (
+        Product.objects.filter(complex_query)
+        .select_related('category', 'manufacturer', 'region')
+    )
     return render(request, 'shop/search_results.html', {
         'query': 'Сложный поиск',
         'results': products
     })
 
 def find_special_offers(request):
-    """
-    Поиск специальных предложений:
-    - Товары со скидкой И количеством > 15
-    ИЛИ
-    - Дорогие товары (>4000р) без скидки
-    """
-    special_query = (Q(discount_price__isnull=False) & Q(stock_quantity__gt=15)) | \
-                   (Q(price__gt=4000) & Q(discount_price__isnull=True))
-    
-    products = Product.objects.filter(special_query).select_related('category', 'manufacturer', 'region')
+    """Поиск специальных предложений"""
+    special_query = (
+        (Q(discount_price__isnull=False) & Q(stock_quantity__gt=15)) |
+        (Q(price__gt=4000) & Q(discount_price__isnull=True))
+    )
+
+    products = (
+        Product.objects.filter(special_query)
+        .select_related('category', 'manufacturer', 'region')
+    )
     return render(request, 'shop/search_results.html', {
         'query': 'Специальные предложения',
         'results': products

@@ -1,11 +1,11 @@
 from django.contrib import admin
 from django.urls import path, include
 from shop.views import (
-    home, product_detail, honey_products, products_with_image, 
-    expensive_products, signup, contact_view, feedback_view, 
+    home, product_detail, honey_products, products_with_image,
+    expensive_products, signup, contact_view, feedback_view,
     add_review, cart_detail, add_to_cart, remove_from_cart,
     ProductListView, ProductDetailView, CategoryListView, ManufacturerListView,
-    cart_view, update_cart, clear_cart, create_order, register_user as register_api, 
+    cart_view, update_cart, clear_cart, create_order, register_user as register_api,
     login_user as login_api, logout_user as logout_api,
     current_user, set_language_api, remove_from_cart_api
 )
@@ -47,13 +47,13 @@ urlpatterns = [
     path('contact/', contact_view, name='contact'),
     path('feedback/', feedback_view, name='feedback'),
     path('product/<int:product_id>/review/', add_review, name='add_review'),
-    path('search/', views.search, name='search'),
+    path('search/', views.search_products, name='search'),
     path('search/complex/', views.search_complex_products, name='search_complex'),
     path('special-offers/', views.find_special_offers, name='special_offers'),
 
     # API URLs (основные для SPA) - ДОЛЖНО БЫТЬ ПЕРВЫМ!
     path('api/', include('shop.api_urls')),
-    
+
     # Дополнительные API endpoints
     path('api/', include([
         path('register/', register_api, name='api_register'),
