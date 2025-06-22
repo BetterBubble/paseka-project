@@ -6998,7 +6998,7 @@ input:focus, textarea:focus, select:focus, .form-control:focus {
   justify-content: space-between;
   margin-bottom: 2.5rem;
   border-bottom: 2px solid #ffe4b5;
-  padding-bottom: 1.2rem;
+  padding: 1rem 2rem 1.2rem 2rem;
 }
 
 .cart-modern-title {
@@ -7032,6 +7032,7 @@ input:focus, textarea:focus, select:focus, .form-control:focus {
   display: flex;
   gap: 2.5rem;
   flex-wrap: wrap;
+  padding: 0 2rem;
 }
 
 .cart-modern-items {
@@ -7047,11 +7048,12 @@ input:focus, textarea:focus, select:focus, .form-control:focus {
   background: linear-gradient(135deg, #fff 0%, #fffbe6 100%);
   border-radius: 1.5rem;
   box-shadow: 0 4px 18px rgba(244, 164, 96, 0.10);
-  padding: 1.2rem 1.5rem;
-  gap: 1.2rem;
+  padding: 2rem;
+  gap: 2rem;
   position: relative;
   transition: box-shadow 0.3s, transform 0.3s;
   border: 1.5px solid #ffe4b5;
+  margin: 0.5rem 1rem;
 }
 .cart-modern-item:hover {
   box-shadow: 0 8px 32px rgba(244, 164, 96, 0.18);
@@ -7179,6 +7181,7 @@ input:focus, textarea:focus, select:focus, .form-control:focus {
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
+  padding-right: 1rem;
 }
 .cart-modern-summary-card {
   background: linear-gradient(135deg, #fffbe6 0%, #ffe4b5 100%);
@@ -7295,14 +7298,34 @@ input:focus, textarea:focus, select:focus, .form-control:focus {
   overflow-x: hidden;
   width: 100%;
   min-height: 100vh;
-  padding-bottom: 3rem;
+  padding: 3rem 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
 }
 
 .cart-modern-container {
   position: relative;
   z-index: 1;
-  margin-top: 3rem;
-  margin-bottom: 3rem;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+@media (max-width: 1200px) {
+  .cart-modern-container {
+    margin: 0 1rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .cart-honey-bg {
+    padding: 1rem 0;
+  }
+  
+  .cart-modern-container {
+    margin: 0 0.5rem;
+  }
 }
 
 @media (max-width: 480px) {

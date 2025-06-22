@@ -215,7 +215,7 @@ const Header = () => {
                   onMouseEnter={() => setShowProfileDropdown(true)}
                   onMouseLeave={() => setShowProfileDropdown(false)}
                 >
-                  <div className="user-avatar" data-testid="user-avatar">
+                    <div className="user-avatar" data-testid="user-avatar">
                     {user.username ? user.username[0].toUpperCase() : '?'}
                   </div>
                   
@@ -236,8 +236,8 @@ const Header = () => {
                           <span>{t.profile}</span>
                         </Link>
 
-                        <Link to="/orders" className="profile-dropdown-item">
-                          <i className="fas fa-box"></i>
+                      <Link to="/orders" className="profile-dropdown-item">
+                        <i className="fas fa-box"></i>
                           <span>{t.orders}</span>
                         </Link>
 
@@ -251,18 +251,18 @@ const Header = () => {
                         <Link to="/settings" className="profile-dropdown-item">
                           <i className="fas fa-cog"></i>
                           <span>{t.settings}</span>
-                        </Link>
+                      </Link>
 
-                        <div className="profile-dropdown-divider"></div>
+                      <div className="profile-dropdown-divider"></div>
 
-                        <button 
+                      <button 
                           className="profile-dropdown-item logout"
-                          onClick={handleLogout}
+                        onClick={handleLogout}
                           aria-label="Выйти из аккаунта"
-                        >
-                          <i className="fas fa-sign-out-alt"></i>
+                      >
+                        <i className="fas fa-sign-out-alt"></i>
                           <span>{t.logout}</span>
-                        </button>
+                  </button>
                       </div>
                     </div>
                   )}

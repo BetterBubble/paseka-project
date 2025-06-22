@@ -128,19 +128,19 @@ const OrderDetail = () => {
         <div className="order-detail-header">
           <div className="order-header-top">
             <div className="order-header-left">
-              <button className="btn btn-outline-honey" onClick={() => navigate('/orders')}>
-                ← Назад к заказам
-              </button>
+          <button className="btn btn-outline-honey" onClick={() => navigate('/orders')}>
+            ← Назад к заказам
+          </button>
               <div className="order-title">
-                <h1>Заказ #{order.id}</h1>
-                <span className={`status-badge status-badge--${order.status}`}>
-                  {order.status_display}
-                </span>
+          <h1>Заказ #{order.id}</h1>
+            <span className={`status-badge status-badge--${order.status}`}>
+              {order.status_display}
+            </span>
               </div>
-            </div>
           </div>
+        </div>
 
-          <div className="order-info">
+        <div className="order-info">
             <div className="info-item">
               <span className="info-label">Дата заказа</span>
               <span className="info-value">{new Date(order.created_at).toLocaleDateString()}</span>
