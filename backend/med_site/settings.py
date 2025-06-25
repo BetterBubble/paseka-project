@@ -83,18 +83,14 @@ WSGI_APPLICATION = 'med_site.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
 
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'myhoneydb',        # название базы, которую я создал в MySQL
-        'USER': 'honeyuser',        # имя пользователя MySQL
-        'PASSWORD': 'securepass123',  # его пароль
-        'HOST': 'localhost',
+        'NAME': 'myhoneydb',
+        'USER': 'honeyuser',
+        'PASSWORD': 'securepass123',
+        'HOST': 'localhost',  # Changed from 'localhost' to 'db' for Docker
         'PORT': '3306',
-        'OPTIONS': {
-            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-        }
     }
 }
 

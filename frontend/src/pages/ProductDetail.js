@@ -4,7 +4,9 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 import ReviewSection from '../components/ReviewSection';
+import ProductEditForm from '../components/ProductEditForm';
 import api from '../services/api';
+import './ProductDetail.css';
 
 const ProductDetail = () => {
   const { productSlug } = useParams();
@@ -21,6 +23,8 @@ const ProductDetail = () => {
   const [showNotification, setShowNotification] = useState(false);
   const [notificationMessage, setNotificationMessage] = useState('');
   const [notificationType, setNotificationType] = useState('success');
+  const [showEditForm, setShowEditForm] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   // Refs для анимаций
   const heroRef = useRef(null);
@@ -60,6 +64,7 @@ const ProductDetail = () => {
 
   useEffect(() => {
     loadProduct();
+    checkAdminStatus();
     
     // Анимации при загрузке
     const observer = new IntersectionObserver(
@@ -109,9 +114,39 @@ const ProductDetail = () => {
     }
   };
 
+  const checkAdminStatus = async () => {
+    try {
+      console.log('Проверяем статус администратора...');
+      const response = await api.get('/current-user/');
+      console.log('Ответ от сервера:', response.data);
+      if (response.data.success && response.data.user) {
+        setIsAdmin(response.data.user.is_staff || response.data.user.is_superuser);
+        console.log('Статус администратора:', response.data.user.is_staff || response.data.user.is_superuser);
+      } else {
+        console.log('Пользователь не авторизован или нет данных о правах');
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Ошибка проверки статуса администратора:', error);
+      setIsAdmin(false);
+    }
+  };
+
   const handleAddToCart = async () => {
     if (!user) {
       showAlert('Для добавления товаров в корзину необходимо войти в систему', 'warning');
+      return;
+    }
+
+    // Проверяем доступность товара
+    if (!product.available || product.stock_quantity <= 0) {
+      showAlert('Товар недоступен для заказа', 'error');
+      return;
+    }
+
+    // Проверяем достаточность количества
+    if (product.stock_quantity < quantity) {
+      showAlert(`Доступно только ${product.stock_quantity} единиц товара`, 'error');
       return;
     }
 
@@ -140,9 +175,23 @@ const ProductDetail = () => {
 
   const handleQuantityChange = (delta) => {
     const newQuantity = quantity + delta;
-    if (newQuantity >= 1 && newQuantity <= product.stock) {
+    if (newQuantity >= 1 && newQuantity <= product.stock_quantity) {
       setQuantity(newQuantity);
     }
+  };
+
+  const handleEditClick = () => {
+    setShowEditForm(true);
+  };
+
+  const handleEditClose = () => {
+    setShowEditForm(false);
+  };
+
+  const handleProductUpdate = (updatedProduct) => {
+    setProduct(updatedProduct);
+    setShowEditForm(false);
+    showAlert('Товар успешно обновлен', 'success');
   };
 
   if (loading) {
@@ -197,6 +246,19 @@ const ProductDetail = () => {
         </div>
       )}
 
+      {/* Edit Form Modal */}
+      {showEditForm && (
+        <div className="modal-overlay">
+          <div className="modal-container">
+            <ProductEditForm
+              product={product}
+              onClose={handleEditClose}
+              onUpdate={handleProductUpdate}
+            />
+          </div>
+        </div>
+      )}
+
       {/* Breadcrumb */}
       <div className="breadcrumb-section">
         <div className="container">
@@ -226,6 +288,23 @@ const ProductDetail = () => {
             {/* Product Gallery */}
             <div className="col-lg-6">
               <div className="product-gallery">
+                {isAdmin && (
+                  <button
+                    className="btn btn-outline-honey btn-sm edit-button"
+                    onClick={handleEditClick}
+                    style={{
+                      marginBottom: '1rem',
+                      minWidth: '120px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                  >
+                    <i className="bi bi-pencil"></i>
+                    Редактировать
+                  </button>
+                )}
                 <div className="main-image-container">
                   <div className="image-badges">
                     {hasDiscount && (
@@ -233,7 +312,7 @@ const ProductDetail = () => {
                         -{discountPercent}%
                       </div>
                     )}
-                    {!product.available || product.stock <= 0 && (
+                    {(!product.available || product.stock_quantity <= 0) && (
                       <div className="out-of-stock-badge">
                         Нет в наличии
                       </div>
@@ -287,92 +366,92 @@ const ProductDetail = () => {
               <div className="product-info">
                 <div className="product-header">
                   <h1 className="product-title">{product.name}</h1>
-                  
-                  {/* Rating */}
-                  <div className="product-rating">
-                    <div className="rating-stars">
-                      {[...Array(5)].map((_, i) => (
-                        <i 
-                          key={i} 
-                          className={`bi bi-star${i < Math.floor(product.average_rating || 0) ? '-fill' : ''}`}
-                        ></i>
-                      ))}
+                </div>
+                
+                {/* Rating */}
+                <div className="product-rating">
+                  <div className="rating-stars">
+                    {[...Array(5)].map((_, i) => (
+                      <i 
+                        key={i} 
+                        className={`bi bi-star${i < Math.floor(product.average_rating || 0) ? '-fill' : ''}`}
+                      ></i>
+                    ))}
+                  </div>
+                  <span className="rating-text">
+                    {product.average_rating ? product.average_rating.toFixed(1) : '0.0'} 
+                    ({product.reviews_count || 0} отзывов)
+                  </span>
+                </div>
+
+                {/* Price */}
+                <div className="product-price">
+                  {hasDiscount && (
+                    <span className="old-price">{product.price} ₽</span>
+                  )}
+                  <span className="current-price">{currentPrice} ₽</span>
+                  {hasDiscount && (
+                    <span className="discount-label">Скидка {discountPercent}%</span>
+                  )}
+                </div>
+              </div>
+
+              {/* Product Features */}
+              <div className="product-features">
+                {mockProductData.features.map((feature, index) => (
+                  <div key={index} className="feature-item">
+                    <div className="feature-icon">{feature.icon}</div>
+                    <div className="feature-content">
+                      <h4>{feature.title}</h4>
+                      <p>{feature.description}</p>
                     </div>
-                    <span className="rating-text">
-                      {product.average_rating ? product.average_rating.toFixed(1) : '0.0'} 
-                      ({product.reviews_count || 0} отзывов)
-                    </span>
                   </div>
+                ))}
+              </div>
 
-                  {/* Price */}
-                  <div className="product-price">
-                    {hasDiscount && (
-                      <span className="old-price">{product.price} ₽</span>
-                    )}
-                    <span className="current-price">{currentPrice} ₽</span>
-                    {hasDiscount && (
-                      <span className="discount-label">Скидка {discountPercent}%</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Product Features */}
-                <div className="product-features">
-                  {mockProductData.features.map((feature, index) => (
-                    <div key={index} className="feature-item">
-                      <div className="feature-icon">{feature.icon}</div>
-                      <div className="feature-content">
-                        <h4>{feature.title}</h4>
-                        <p>{feature.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Quantity Selector */}
-                <div className="quantity-section">
-                  <label className="section-label">Количество:</label>
-                  <div className="quantity-controls">
-                    <button 
-                      className="quantity-btn"
-                      onClick={() => handleQuantityChange(-1)}
-                      disabled={quantity <= 1}
-                      aria-label="Уменьшить количество"
-                    >
-                      <i className="bi bi-dash"></i>
-                    </button>
-                    <span className="quantity-value">{quantity}</span>
-                    <button 
-                      className="quantity-btn"
-                      onClick={() => handleQuantityChange(1)}
-                      disabled={quantity >= product.stock}
-                      aria-label="Увеличить количество"
-                    >
-                      <i className="bi bi-plus"></i>
-                    </button>
-                  </div>
-                  <span className="stock-info">В наличии: {product.stock} шт.</span>
-                </div>
-
-                {/* Action Buttons */}
-                <div className="product-actions">
+              {/* Quantity Selector */}
+              <div className="quantity-section">
+                <label className="section-label">Количество:</label>
+                <div className="quantity-controls">
                   <button 
-                    className="btn btn-honey btn-lg add-to-cart-btn"
-                    onClick={handleAddToCart}
-                    disabled={!product.available || product.stock <= 0}
+                    className="quantity-btn"
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= 1 || !product.available || product.stock_quantity <= 0}
+                    aria-label="Уменьшить количество"
                   >
-                    <i className="bi bi-cart-plus me-2"></i>
-                    {product.available && product.stock > 0 ? 'Добавить в корзину' : 'Нет в наличии'}
+                    <i className="bi bi-dash"></i>
                   </button>
-                  
+                  <span className="quantity-value">{quantity}</span>
                   <button 
-                    className={`btn btn-outline-honey wishlist-btn ${isWishlisted ? 'active' : ''}`}
-                    onClick={handleWishlistToggle}
+                    className="quantity-btn"
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={quantity >= product.stock_quantity || !product.available || product.stock_quantity <= 0}
+                    aria-label="Увеличить количество"
                   >
-                    <i className={`bi bi-heart${isWishlisted ? '-fill' : ''} me-2`}></i>
-                    {isWishlisted ? 'В избранном' : 'В избранное'}
+                    <i className="bi bi-plus"></i>
                   </button>
                 </div>
+                <span className="stock-info">В наличии: {product.stock_quantity} шт.</span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="product-actions">
+                <button 
+                  className="btn btn-honey btn-lg add-to-cart-btn"
+                  onClick={handleAddToCart}
+                  disabled={!product.available || product.stock_quantity <= 0}
+                >
+                  <i className="bi bi-cart-plus me-2"></i>
+                  {product.available && product.stock_quantity > 0 ? 'Добавить в корзину' : 'Нет в наличии'}
+                </button>
+                
+                <button 
+                  className={`btn btn-outline-honey wishlist-btn ${isWishlisted ? 'active' : ''}`}
+                  onClick={handleWishlistToggle}
+                >
+                  <i className={`bi bi-heart${isWishlisted ? '-fill' : ''} me-2`}></i>
+                  {isWishlisted ? 'В избранном' : 'В избранное'}
+                </button>
               </div>
             </div>
           </div>
@@ -465,18 +544,9 @@ const ProductDetail = () => {
 
       {/* Related Products */}
       {relatedProducts.length > 0 && (
-        <section ref={relatedRef} className="related-products-section">
+        <section className="related-products">
           <div className="container">
-            <div className="section-header">
-              <h2 className="section-title">
-                <i className="bi bi-collection me-2"></i>
-                Похожие товары
-              </h2>
-              <p className="section-subtitle">
-                Возможно, вас также заинтересуют эти товары
-              </p>
-            </div>
-
+            <h2 className="section-title">Похожие товары</h2>
             <div className="related-products-grid">
               {relatedProducts.map((relatedProduct, index) => (
                 <div 
@@ -495,4 +565,4 @@ const ProductDetail = () => {
   );
 };
 
-export default ProductDetail; 
+export default ProductDetail;

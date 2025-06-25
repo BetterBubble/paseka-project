@@ -15,6 +15,17 @@ const Cart = () => {
     }
   }, [user]);
 
+  // Добавляем стили для уведомления о недоступности товара
+  const styles = {
+    cartModernItemAvailability: {
+      fontSize: '0.85rem',
+      marginTop: '0.5rem',
+      display: 'flex',
+      alignItems: 'center',
+      gap: '0.25rem'
+    }
+  };
+
   const handleQuantityChange = async (productId, newQuantity) => {
     if (newQuantity <= 0) {
       await removeFromCart(productId);
@@ -39,6 +50,12 @@ const Cart = () => {
     console.log('token:', authToken);
     if (!authToken) {
       throw new Error('Для оформления заказа необходимо войти в систему.');
+    }
+
+    // Проверяем доступность товаров перед оформлением заказа
+    const unavailableItems = items.filter(item => !item.available);
+    if (unavailableItems.length > 0) {
+      throw new Error('В корзине есть недоступные товары. Пожалуйста, удалите их перед оформлением заказа.');
     }
     
     try {
@@ -180,17 +197,32 @@ const Cart = () => {
                   <div className="cart-modern-item-price">
                     {item.product.discount_price || item.product.price} ₽
                   </div>
+                  {!item.available && (
+                    <div className="cart-modern-item-availability text-danger" style={styles.cartModernItemAvailability}>
+                      <i className="bi bi-exclamation-circle me-1"></i>
+                      Товар временно недоступен
+                    </div>
+                  )}
                 </div>
                 <div className="cart-modern-item-qty">
-                  <button className="cart-modern-qty-btn" onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}>-</button>
+                  <button 
+                    className="cart-modern-qty-btn" 
+                    onClick={() => handleQuantityChange(item.product.id, item.quantity - 1)}
+                    disabled={!item.available}
+                  >-</button>
                   <input 
                     type="number" 
                     className="cart-modern-qty-input"
                     value={item.quantity}
                     onChange={e => handleQuantityChange(item.product.id, parseInt(e.target.value) || 0)}
                     min="0"
+                    disabled={!item.available}
                   />
-                  <button className="cart-modern-qty-btn" onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}>+</button>
+                  <button 
+                    className="cart-modern-qty-btn" 
+                    onClick={() => handleQuantityChange(item.product.id, item.quantity + 1)}
+                    disabled={!item.available}
+                  >+</button>
                 </div>
                 <div className="cart-modern-item-total">
                   {item.total_price} ₽

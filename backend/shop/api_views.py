@@ -11,16 +11,17 @@ from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
 from rest_framework.response import Response
+from rest_framework.parsers import MultiPartParser, FormParser
 
 # Локальные импорты
 from .models import (
     Category, Product, Cart, CartItem, Order,
-    OrderItem, Review, DeliveryMethod, Manufacturer
+    OrderItem, Review, DeliveryMethod, Manufacturer, Region
 )
 from .serializers import (
     CategorySerializer, ProductSerializer, CartSerializer,
     CartItemSerializer, OrderSerializer, ReviewSerializer,
-    UserSerializer, DeliveryMethodSerializer, ManufacturerSerializer
+    UserSerializer, DeliveryMethodSerializer, ManufacturerSerializer, RegionSerializer
 )
 from .authentication import BearerTokenAuthentication
 
@@ -34,18 +35,22 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     lookup_field = 'slug'
 
-class ProductViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet для просмотра товаров. Только для чтения."""
-    queryset = Product.objects.filter(available=True)
+class ProductViewSet(viewsets.ModelViewSet):
+    """ViewSet для работы с товарами."""
     serializer_class = ProductSerializer
     lookup_field = 'slug'
+    parser_classes = (MultiPartParser, FormParser)
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [BearerTokenAuthentication]
 
     def get_queryset(self):
         """
         Переопределяем queryset для фильтрации товаров.
         Поддерживает фильтрацию по категории и поиск по названию.
         """
-        queryset = super().get_queryset()
+        # Показываем все товары, независимо от доступности
+        queryset = Product.objects.all()
+
         category = self.request.query_params.get('category')
         search = self.request.query_params.get('search')
 
@@ -55,6 +60,24 @@ class ProductViewSet(viewsets.ReadOnlyModelViewSet):
             queryset = queryset.filter(name__icontains=search)
 
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        """Создание нового товара"""
+        try:
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            self.perform_create(serializer)
+            headers = self.get_success_headers(serializer.data)
+            return Response(
+                serializer.data,
+                status=status.HTTP_201_CREATED,
+                headers=headers
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
     @action(detail=True, methods=['get'])
     def reviews(self, request, **kwargs):
@@ -96,9 +119,27 @@ class CartViewSet(viewsets.ModelViewSet):
         quantity = int(request.data.get('quantity', 1))
 
         try:
-            product = Product.objects.get(id=product_id, available=True)
+            product = Product.objects.get(id=product_id)
+            
+            # Проверяем доступность товара
+            if not product.available or product.stock_quantity <= 0:
+                return Response(
+                    {'error': 'Товар недоступен для заказа'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Проверяем достаточность количества
+            if product.stock_quantity < quantity:
+                return Response(
+                    {'error': f'Доступно только {product.stock_quantity} единиц товара'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
         except Product.DoesNotExist:
-            return Response({'error': 'Товар не найден'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {'error': 'Товар не найден'},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
         cart_item, created = CartItem.objects.get_or_create(
             cart=cart,
@@ -107,7 +148,14 @@ class CartViewSet(viewsets.ModelViewSet):
         )
 
         if not created:
-            cart_item.quantity += quantity
+            # Проверяем, не превысит ли новое количество доступный остаток
+            new_quantity = cart_item.quantity + quantity
+            if new_quantity > product.stock_quantity:
+                return Response(
+                    {'error': f'В корзине уже есть {cart_item.quantity} единиц товара. Доступно для добавления еще {product.stock_quantity - cart_item.quantity} единиц'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            cart_item.quantity = new_quantity
             cart_item.save()
 
         serializer = CartSerializer(cart)
@@ -301,10 +349,16 @@ class CategoryListAPIView(generics.ListAPIView):
     serializer_class = CategorySerializer
 
 class ManufacturerListAPIView(generics.ListAPIView):
-    """API для получения списка производителей с пагинацией."""
+    """API для получения списка производителей без пагинации."""
     queryset = Manufacturer.objects.all()
     serializer_class = ManufacturerSerializer
-    pagination_class = PageNumberPagination
+    pagination_class = None  # Отключаем пагинацию
+
+class RegionListAPIView(generics.ListAPIView):
+    """API для получения списка регионов без пагинации."""
+    queryset = Region.objects.all()
+    serializer_class = RegionSerializer
+    pagination_class = None  # Отключаем пагинацию
 
 @api_view(['GET', 'DELETE', 'PATCH'])
 @permission_classes([IsAuthenticated])

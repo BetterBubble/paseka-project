@@ -1,7 +1,7 @@
 """
 Модели для интернет-магазина пчелиной продукции.
 """
-# Standard Library
+# Стандартная библиотека
 import secrets
 from datetime import timedelta
 
@@ -121,7 +121,8 @@ class Product(models.Model):
         _("Изображение"),
         upload_to="products/",
         blank=True,
-        null=True
+        null=True,
+        max_length=255
     )
     manual = models.FileField(
         _("Инструкция (PDF)"),

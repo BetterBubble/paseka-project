@@ -144,7 +144,7 @@ const ProductCard = ({ product }) => {
             <div className="d-grid gap-2" style={{ gap: 0, margin: 0, padding: 0 }}>
               <button 
                 onClick={handleAddToCart}
-                disabled={!product.available || product.stock <= 0}
+                disabled={!product.available || product.stock_quantity <= 0}
                 onMouseEnter={() => setIsHoveringAdd(true)}
                 onMouseLeave={() => setIsHoveringAdd(false)}
                 style={{ 
@@ -153,12 +153,12 @@ const ProductCard = ({ product }) => {
                   padding: '0.45rem 0.5rem',
                   borderRadius: '0.75rem',
                   margin: 0,
-                  background: isHoveringAdd && product.available && product.stock > 0 
+                  background: isHoveringAdd && product.available && product.stock_quantity > 0 
                     ? 'linear-gradient(135deg, #daa520 0%, #b8860b 100%)'
                     : 'linear-gradient(135deg, #f4a460 0%, #daa520 100%)',
                   color: 'white',
                   border: 'none',
-                  cursor: product.available && product.stock > 0 ? 'pointer' : 'not-allowed',
+                  cursor: product.available && product.stock_quantity > 0 ? 'pointer' : 'not-allowed',
                   transition: 'all 0.3s ease',
                   textDecoration: 'none',
                   display: 'inline-flex',
@@ -166,18 +166,18 @@ const ProductCard = ({ product }) => {
                   justifyContent: 'center',
                   gap: '0.3rem',
                   minHeight: '32px',
-                  boxShadow: isHoveringAdd && product.available && product.stock > 0
+                  boxShadow: isHoveringAdd && product.available && product.stock_quantity > 0
                     ? '0 4px 12px rgba(218, 165, 32, 0.4)'
                     : '0 2px 6px rgba(244, 164, 96, 0.25)',
-                  transform: isHoveringAdd && product.available && product.stock > 0 
+                  transform: isHoveringAdd && product.available && product.stock_quantity > 0 
                     ? 'translateY(-1px) scale(1.05)' 
                     : 'translateY(0) scale(1)',
                   width: '100%',
-                  opacity: (!product.available || product.stock <= 0) ? 0.6 : 1
+                  opacity: (!product.available || product.stock_quantity <= 0) ? 0.6 : 1
                 }}
               >
                 <i className="bi bi-cart-plus me-2"></i>
-                {product.available && product.stock > 0 ? t.addToCart : t.outOfStock}
+                {product.available && product.stock_quantity > 0 ? t.addToCart : t.outOfStock}
               </button>
               <Link 
                 to={`/product/${product.slug}`}

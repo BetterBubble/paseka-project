@@ -3,8 +3,12 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import Pagination from '../components/Pagination';
 import { useTranslations } from '../components/LanguageSwitcher';
+import PriceNavigator from '../components/PriceNavigator';
+import ManufacturersList from '../components/ManufacturersList';
+import ProductCreationForm from '../components/ProductCreationForm';
 import api from '../services/api';
 import { getStaticImageUrl, STATIC_IMAGES } from '../utils/images';
+import { useAuth } from '../context/AuthContext';
 
 const Home = () => {
   const { t, language } = useTranslations();
@@ -17,6 +21,8 @@ const Home = () => {
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const productsRef = useRef(null);
+  const { user } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const loadProducts = useCallback(async (page = 1) => {
     try {
@@ -48,6 +54,22 @@ const Home = () => {
     loadProducts(currentPage);
     loadCategories();
   }, [loadProducts, loadCategories, currentPage]);
+
+  useEffect(() => {
+    const checkAdminStatus = async () => {
+      try {
+        const response = await api.get('/current-user/');
+        if (response.data.success && response.data.user) {
+          setIsAdmin(response.data.user.is_staff || response.data.user.is_superuser);
+        }
+      } catch (error) {
+        console.error('Ошибка при проверке статуса администратора:', error);
+        setIsAdmin(false);
+      }
+    };
+
+    checkAdminStatus();
+  }, []);
 
   const handleSearch = async (e) => {
     e.preventDefault();
@@ -227,62 +249,90 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Секция преимуществ */}
-      <section className="py-5 animate__animated animate__fadeInUp" style={{background:'linear-gradient(90deg, #fffbe6 0%, #fff9e6 100%)'}}>
+      {/* Почему выбирают нас */}
+      <section className="why-choose-us py-5" style={{background: '#fffbe6'}}>
         <div className="container">
-          <div className="row text-center mb-4">
-            <div className="col">
-              <h2 className="text-honey fw-bold mb-3" style={{fontSize:'2.1rem'}}>
-                {language === 'ru' ? 'Почему выбирают нас?' : 'Why choose us?'}
-              </h2>
-            </div>
-          </div>
-          <div className="row g-4 justify-content-center">
-            <div className="col-md-4">
-              <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
-                <div className="mb-3"><i className="bi bi-droplet-half text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">
-                  {language === 'ru' ? '100% Натурально' : '100% Natural'}
-                </h5>
-                <p className="text-muted mb-0">
+          <h2 className="text-center mb-5 text-honey animate__animated animate__fadeInDown">
+            {language === 'ru' ? 'Почему выбирают нас' : 'Why Choose Us'}
+          </h2>
+          <div className="row g-4">
+            <div className="col-md-4 animate__animated animate__fadeInUp" style={{animationDelay: '0.1s'}}>
+              <div className="feature text-center p-4 bg-white rounded-4 shadow-sm h-100" style={{border: '1.5px solid #ffe4b5', transition: 'transform 0.3s ease'}}>
+                <div className="icon-wrapper mb-3">
+                  <i className="bi bi-award text-honey" style={{fontSize: '2rem'}}></i>
+                </div>
+                <h4>{language === 'ru' ? 'Качество' : 'Quality'}</h4>
+                <p className="text-muted">
                   {language === 'ru' 
-                    ? 'Только свежий и чистый мёд, без добавок и сахара.' 
-                    : 'Only fresh and pure honey, without additives and sugar.'
+                    ? 'Только натуральные продукты от проверенных пасечников' 
+                    : 'Only natural products from verified beekeepers'
                   }
                 </p>
               </div>
             </div>
-            <div className="col-md-4">
-              <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
-                <div className="mb-3"><i className="bi bi-flower1 text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">
-                  {language === 'ru' ? 'Собственное производство' : 'Own production'}
-                </h5>
-                <p className="text-muted mb-0">
-                  {language === 'ru' 
-                    ? 'Всё производится на нашей семейной пасеке с любовью.' 
-                    : 'Everything is produced on our family apiary with love.'
+            <div className="col-md-4 animate__animated animate__fadeInUp" style={{animationDelay: '0.2s'}}>
+              <div className="feature text-center p-4 bg-white rounded-4 shadow-sm h-100" style={{border: '1.5px solid #ffe4b5', transition: 'transform 0.3s ease'}}>
+                <div className="icon-wrapper mb-3">
+                  <i className="bi bi-truck text-honey" style={{fontSize: '2rem'}}></i>
+                </div>
+                <h4>{language === 'ru' ? 'Доставка' : 'Delivery'}</h4>
+                <p className="text-muted">
+                  {language === 'ru'
+                    ? 'Быстрая и бережная доставка по всей России'
+                    : 'Fast and careful delivery throughout Russia'
                   }
                 </p>
               </div>
             </div>
-            <div className="col-md-4">
-              <div className="p-4 bg-white shadow-sm rounded-4 h-100 advantage-card animate__animated animate__fadeInUp" style={{transition:'box-shadow 0.3s',border:'1.5px solid #ffe4b5'}}>
-                <div className="mb-3"><i className="bi bi-shield-check text-honey" style={{fontSize:'2.5rem'}}></i></div>
-                <h5 className="fw-bold mb-2">
-                  {language === 'ru' ? 'Гарантия качества' : 'Quality guarantee'}
-                </h5>
-                <p className="text-muted mb-0">
-                  {language === 'ru' 
-                    ? 'Контроль качества на каждом этапе, сертификаты и честность.' 
-                    : 'Quality control at every stage, certificates and honesty.'
+            <div className="col-md-4 animate__animated animate__fadeInUp" style={{animationDelay: '0.3s'}}>
+              <div className="feature text-center p-4 bg-white rounded-4 shadow-sm h-100" style={{border: '1.5px solid #ffe4b5', transition: 'transform 0.3s ease'}}>
+                <div className="icon-wrapper mb-3">
+                  <i className="bi bi-shield-check text-honey" style={{fontSize: '2rem'}}></i>
+                </div>
+                <h4>{language === 'ru' ? 'Гарантия' : 'Guarantee'}</h4>
+                <p className="text-muted">
+                  {language === 'ru'
+                    ? 'Гарантия качества и возврат товара'
+                    : 'Quality guarantee and product return'
                   }
                 </p>
               </div>
             </div>
           </div>
         </div>
+
+        <style jsx>{`
+          .feature:hover {
+            transform: translateY(-5px);
+          }
+          .icon-wrapper {
+            width: 64px;
+            height: 64px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 193, 7, 0.1);
+            border-radius: 50%;
+          }
+        `}</style>
       </section>
+
+      {/* Ценовой навигатор */}
+      <PriceNavigator />
+
+      {/* Список производителей */}
+      <ManufacturersList />
+
+      {/* Product Creation Form - только для администраторов */}
+      {isAdmin && (
+        <section className="product-creation-section">
+          <div className="container">
+            <h2 className="section-title">Создание нового товара</h2>
+            <ProductCreationForm />
+          </div>
+        </section>
+      )}
 
       {/* Категории */}
       <section className="py-5 animate__animated animate__fadeInUp" style={{background:'linear-gradient(90deg, #fffbe6 0%, #fff9e6 100%)'}}>

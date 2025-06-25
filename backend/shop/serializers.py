@@ -14,7 +14,7 @@ from rest_framework import serializers
 # Local
 from .models import (
     Category, Product, Cart, CartItem, Order,
-    OrderItem, Review, DeliveryMethod, Manufacturer
+    OrderItem, Review, DeliveryMethod, Manufacturer, Region
 )
 
 User = get_user_model()
@@ -35,6 +35,21 @@ class ProductSerializer(serializers.ModelSerializer):
     """Сериализатор для товаров"""
     category = CategorySerializer(read_only=True)
     manufacturer = ManufacturerSerializer(read_only=True)
+    category_id = serializers.PrimaryKeyRelatedField(
+        source='category',
+        queryset=Category.objects.all(),
+        write_only=True
+    )
+    manufacturer_id = serializers.PrimaryKeyRelatedField(
+        source='manufacturer',
+        queryset=Manufacturer.objects.all(),
+        write_only=True
+    )
+    region_id = serializers.PrimaryKeyRelatedField(
+        source='region',
+        queryset=Region.objects.all(),
+        write_only=True
+    )
     average_rating = serializers.SerializerMethodField()
     reviews_count = serializers.SerializerMethodField()
     image_url = serializers.SerializerMethodField()
@@ -45,10 +60,24 @@ class ProductSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'name', 'slug', 'description', 'price',
             'discount_price', 'image', 'image_url', 'manual',
-            'manual_url', 'category', 'manufacturer', 'stock',
-            'available', 'created', 'updated', 'average_rating',
+            'manual_url', 'category', 'manufacturer', 'category_id',
+            'manufacturer_id', 'region_id', 'stock_quantity', 'product_type',
+            'available', 'created_at', 'average_rating',
             'reviews_count'
         ]
+        read_only_fields = ['id', 'slug', 'created_at', 'average_rating', 'reviews_count']
+
+    def create(self, validated_data):
+        """Создание нового товара"""
+        # Убедимся, что available установлен в True по умолчанию
+        if 'available' not in validated_data:
+            validated_data['available'] = True
+        
+        # Если есть stock_quantity и оно больше 0, товар должен быть доступен
+        if validated_data.get('stock_quantity', 0) > 0:
+            validated_data['available'] = True
+        
+        return super().create(validated_data)
 
     def get_average_rating(self, obj):
         return obj.average_rating()
@@ -76,10 +105,11 @@ class CartItemSerializer(serializers.ModelSerializer):
     """Сериализатор для товаров в корзине"""
     product = ProductSerializer(read_only=True)
     total_price = serializers.SerializerMethodField()
+    available = serializers.BooleanField(source='product.available', read_only=True)
 
     class Meta:
         model = CartItem
-        fields = ['id', 'product', 'quantity', 'total_price']
+        fields = ['id', 'product', 'quantity', 'total_price', 'available']
 
     def get_total_price(self, obj):
         return obj.get_total_price()
@@ -223,3 +253,9 @@ class UserSerializer(serializers.ModelSerializer):
         model = User
         fields = ['id', 'username', 'email', 'first_name', 'last_name']
         read_only_fields = ['id']
+
+class RegionSerializer(serializers.ModelSerializer):
+    """Сериализатор для регионов"""
+    class Meta:
+        model = Region
+        fields = ['id', 'name']

@@ -57,6 +57,7 @@ const OrderDetail = () => {
     return typeof price === 'number' ? price.toFixed(2) : parseFloat(price).toFixed(2);
   };
 
+  // Функция для изменения количества товара
   const handleQuantityChange = (itemId, value) => {
     const newQuantity = Math.max(0, parseInt(value) || 0);
     setEditedQuantities(prev => ({
@@ -75,6 +76,7 @@ const OrderDetail = () => {
     }
   };
 
+  // Функция для сохранения изменений
   const handleSaveChanges = async () => {
     try {
       const updatedItems = order.items

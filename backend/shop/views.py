@@ -8,7 +8,7 @@ from django.core.cache import cache
 from django.core.mail import send_mail
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 from django.db import transaction
-from django.db.models import Avg, F, Q
+from django.db.models import Avg, F, Q, Min, Max
 from django.http import JsonResponse, Http404
 from django.middleware.csrf import get_token
 from django.shortcuts import render, get_object_or_404, redirect
@@ -17,8 +17,10 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.cache import cache_page
 from django.views.decorators.csrf import ensure_csrf_cookie, csrf_exempt
 from django.views.decorators.http import require_http_methods, require_POST
+from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListAPIView, RetrieveAPIView
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from shop.models import (
     Product, Category, Manufacturer, Region,
@@ -465,7 +467,6 @@ def login_user(request):
             'error': f'Произошла ошибка при входе: {str(exc)}'
         }, status=500)
 
-@csrf_exempt
 @require_http_methods(["GET"])
 def current_user(request):
     """API endpoint для получения данных текущего пользователя по токену"""
@@ -487,7 +488,9 @@ def current_user(request):
                     'id': token.user.id,
                     'username': token.user.username,
                     'email': token.user.email,
-                    'is_authenticated': True
+                    'is_authenticated': True,
+                    'is_staff': token.user.is_staff,
+                    'is_superuser': token.user.is_superuser
                 }
             })
         token.delete()
@@ -888,4 +891,26 @@ def find_special_offers(request):
     return render(request, 'shop/search_results.html', {
         'query': 'Специальные предложения',
         'results': products
+    })
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def price_statistics(request):
+    """API endpoint для получения статистики цен"""
+    stats = Product.objects.filter(available=True).aggregate(
+        min_price=Min('price'),
+        max_price=Max('price'),
+        avg_price=Avg('price')
+    )
+    
+    # Получаем средние цены по категориям
+    category_stats = Product.objects.filter(available=True).values(
+        'category__name'
+    ).annotate(
+        avg_price=Avg('price')
+    ).order_by('category__name')
+
+    return Response({
+        'general_stats': stats,
+        'category_stats': list(category_stats)
     })

@@ -5,14 +5,23 @@
     "jest": true
   },
   "extends": [
-    "react-app"
+    "eslint:recommended",
+    "plugin:react/recommended"
   ],
   "parserOptions": {
     "ecmaFeatures": {
       "jsx": true
     },
-    "ecmaVersion": "latest",
+    "ecmaVersion": 12,
     "sourceType": "module"
+  },
+  "plugins": [
+    "react"
+  ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
   },
   "rules": {
     "react/react-in-jsx-scope": "off",
